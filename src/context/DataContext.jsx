@@ -8,6 +8,34 @@ export const DataProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [pgs, setPgs] = useState([]);
 
+    // Helper: Convert DB pg to frontend format
+    const transformPgFromDB = (dbPg) => ({
+        id: dbPg.id,
+        adminId: dbPg.admin_id,
+        name: dbPg.name,
+        address: dbPg.address,
+        rooms: dbPg.rooms ?? [],
+        foodMenu: dbPg.food_menu ?? [],
+        wifiDetails: dbPg.wifi_details ?? [],
+        electricityData: dbPg.electricity_data ?? {},
+        eBillRate: dbPg.e_bill_rate ?? 10,
+        foodAmount: dbPg.food_amount ?? 0,
+        createdAt: dbPg.created_at,
+        updatedAt: dbPg.updated_at
+    });
+
+    // Helper: Convert frontend pg to DB format
+    const transformPgToDB = (pg) => ({
+        name: pg.name,
+        address: pg.address,
+        rooms: pg.rooms ?? [],
+        food_menu: pg.foodMenu ?? pg.food_menu ?? [],
+        wifi_details: pg.wifiDetails ?? pg.wifi_details ?? [],
+        electricity_data: pg.electricityData ?? pg.electricity_data ?? {},
+        e_bill_rate: pg.eBillRate ?? pg.e_bill_rate ?? 10,
+        food_amount: pg.foodAmount ?? pg.food_amount ?? 0
+    });
+
     // Auth State Listener
     useEffect(() => {
         const fetchProfile = async (session) => {
@@ -44,7 +72,7 @@ export const DataProvider = ({ children }) => {
             .eq('admin_id', userId);
 
         if (!error && data) {
-            setPgs(data);
+            setPgs(data.map(transformPgFromDB));
         }
     };
 
@@ -106,15 +134,8 @@ export const DataProvider = ({ children }) => {
         }
 
         const insertData = {
-            name: pgData.name,
-            address: pgData.address,
-            admin_id: user.id,
-            rooms: [],
-            food_menu: [],
-            wifi_details: [],
-            electricity_data: {},
-            e_bill_rate: 10,
-            food_amount: 0
+            ...transformPgToDB(pgData),
+            admin_id: user.id
         };
 
         console.log('Attempting to insert PG:', insertData);
@@ -130,22 +151,25 @@ export const DataProvider = ({ children }) => {
             alert(`Failed to add PG: ${error.message}\nDetails: ${error.details || 'No additional details'}\nHint: ${error.hint || 'Check RLS policies and schema'}`);
         } else {
             console.log('PG added successfully:', data);
-            setPgs([...pgs, data]);
+            setPgs([...pgs, transformPgFromDB(data)]);
             alert('PG added successfully!');
         }
     };
 
     const updatePg = async (updatedPg) => {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('pgs')
-            .update(updatedPg)
-            .eq('id', updatedPg.id);
+            .update(transformPgToDB(updatedPg))
+            .eq('id', updatedPg.id)
+            .select()
+            .single();
 
         if (error) {
             console.error('Error updating PG:', error);
-            alert('Failed to update PG');
+            alert('Failed to update PG: ' + error.message);
         } else {
-            setPgs(pgs.map(pg => pg.id === updatedPg.id ? updatedPg : pg));
+            const next = transformPgFromDB(data);
+            setPgs(pgs.map(pg => pg.id === updatedPg.id ? next : pg));
         }
     };
 
@@ -360,9 +384,9 @@ export const DataProvider = ({ children }) => {
                 { event: '*', schema: 'public', table: 'pgs', filter: `admin_id=eq.${user.id}` },
                 (payload) => {
                     if (payload.eventType === 'INSERT') {
-                        setPgs(prev => [payload.new, ...prev]);
+                        setPgs(prev => [transformPgFromDB(payload.new), ...prev]);
                     } else if (payload.eventType === 'UPDATE') {
-                        setPgs(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+                        setPgs(prev => prev.map(p => p.id === payload.new.id ? transformPgFromDB(payload.new) : p));
                     } else if (payload.eventType === 'DELETE') {
                         setPgs(prev => prev.filter(p => p.id !== payload.old.id));
                     }
