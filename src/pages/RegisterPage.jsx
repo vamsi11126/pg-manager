@@ -61,14 +61,14 @@ const RegisterPage = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
             return;
         }
 
-        const result = register({
+        const result = await register({
             name: formData.name.trim(),
             email: formData.email.trim().toLowerCase(),
             password: formData.password,
