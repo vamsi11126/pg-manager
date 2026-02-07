@@ -5,6 +5,39 @@
 -- Run this in your Supabase SQL Editor
 
 -- =====================================================
+-- PGS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS pgs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  address TEXT NOT NULL,
+  rooms JSONB DEFAULT '[]'::jsonb,
+  food_menu JSONB DEFAULT '[]'::jsonb,
+  wifi_details JSONB DEFAULT '[]'::jsonb,
+  electricity_data JSONB DEFAULT '{}'::jsonb,
+  e_bill_rate NUMERIC DEFAULT 10,
+  food_amount NUMERIC DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE pgs ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policy if it exists
+DROP POLICY IF EXISTS "Users can manage their own pgs" ON pgs;
+
+-- Policy: Users can only access their own PGs
+CREATE POLICY "Users can manage their own pgs"
+  ON pgs
+  FOR ALL
+  USING (admin_id = auth.uid());
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_pgs_admin_id ON pgs(admin_id);
+
+-- =====================================================
 -- TENANTS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS tenants (
@@ -89,8 +122,15 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS update_pgs_updated_at ON pgs;
 DROP TRIGGER IF EXISTS update_tenants_updated_at ON tenants;
 DROP TRIGGER IF EXISTS update_payment_requests_updated_at ON payment_requests;
+
+-- Trigger for pgs table
+CREATE TRIGGER update_pgs_updated_at
+    BEFORE UPDATE ON pgs
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- Trigger for tenants table
 CREATE TRIGGER update_tenants_updated_at
