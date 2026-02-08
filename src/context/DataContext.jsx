@@ -5,6 +5,12 @@ const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [authRole, setAuthRole] = useState(null);
+    const [tenantUser, setTenantUser] = useState(null);
+    const [tenantPg, setTenantPg] = useState(null);
+    const [tenantRoommates, setTenantRoommates] = useState([]);
+    const [tenantBills, setTenantBills] = useState([]);
+    const [tenantPaymentRequests, setTenantPaymentRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pgs, setPgs] = useState([]);
 
@@ -36,6 +42,74 @@ export const DataProvider = ({ children }) => {
         food_amount: pg.foodAmount ?? pg.food_amount ?? 0
     });
 
+    const fetchTenantByAuthId = async (authUserId, email) => {
+        const { data: tenantData, error: tenantError } = await supabase
+            .from('tenants')
+            .select('*')
+            .eq('auth_user_id', authUserId)
+            .single();
+
+        let resolvedTenant = tenantData;
+
+        if (tenantError || !tenantData) {
+            if (email) {
+                const { data: tenantByEmail } = await supabase
+                    .from('tenants')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+                resolvedTenant = tenantByEmail || null;
+
+                if (resolvedTenant && !resolvedTenant.auth_user_id) {
+                    await supabase
+                        .from('tenants')
+                        .update({ auth_user_id: authUserId })
+                        .eq('id', resolvedTenant.id);
+                }
+            }
+        }
+
+        if (!resolvedTenant) {
+            setTenantUser(null);
+            return;
+        }
+
+        const tenant = transformTenantFromDB(resolvedTenant);
+        setTenantUser(tenant);
+
+        const { data: pgData } = await supabase
+            .from('pgs')
+            .select('*')
+            .eq('id', tenant.pgId)
+            .single();
+
+        if (pgData) {
+            setTenantPg(transformPgFromDB(pgData));
+        }
+
+        const { data: roommates } = await supabase
+            .from('tenants')
+            .select('id,name,phone')
+            .eq('pg_id', tenant.pgId)
+            .eq('room_number', tenant.roomNumber)
+            .neq('id', tenant.id);
+        setTenantRoommates(roommates || []);
+
+        const { data: tenantRequests } = await supabase
+            .from('payment_requests')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('created_at', { ascending: false });
+        setTenantPaymentRequests((tenantRequests || []).map(transformPaymentFromDB));
+
+        const { data: bills } = await supabase
+            .from('tenant_bills')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('due_date', { ascending: false });
+        setTenantBills(bills || []);
+    };
+
     // Auth State Listener
     useEffect(() => {
         const fetchProfile = async (session) => {
@@ -45,12 +119,27 @@ export const DataProvider = ({ children }) => {
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
-                setUser({ ...session.user, ...profile });
-                await fetchPGs(session.user.id);
-                await fetchTenants(session.user.id);
-                await fetchPaymentRequests(session.user.id);
+
+                if (profile?.role === 'admin') {
+                    setAuthRole('admin');
+                    setUser({ ...session.user, ...profile });
+                    setTenantUser(null);
+                    await fetchPGs(session.user.id);
+                    await fetchTenants(session.user.id);
+                    await fetchPaymentRequests(session.user.id);
+                } else {
+                    setAuthRole('tenant');
+                    setUser(null);
+                    await fetchTenantByAuthId(session.user.id, session.user.email);
+                }
             } else {
                 setUser(null);
+                setTenantUser(null);
+                setAuthRole(null);
+                setTenantPg(null);
+                setTenantRoommates([]);
+                setTenantBills([]);
+                setTenantPaymentRequests([]);
                 setPgs([]);
                 setTenants([]);
                 setPaymentRequests([]);
@@ -116,15 +205,62 @@ export const DataProvider = ({ children }) => {
         });
 
         if (error) {
-            alert(error.message);
-            return false;
+            return { success: false, message: error.message };
         }
-        return true;
+        return { success: true };
+    };
+
+    const loginAsOwner = async (email, password) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            return { success: false, message: error.message };
+        }
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
+            await supabase.auth.signOut();
+            return { success: false, message: 'This login is for owners only. Please use tenant login.' };
+        }
+        return { success: true };
+    };
+
+    const loginAsTenant = async (email, password) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            return { success: false, message: error.message };
+        }
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+        if (profile?.role === 'admin') {
+            await supabase.auth.signOut();
+            return { success: false, message: 'This login is for tenants only. Please use owner login.' };
+        }
+        return { success: true };
     };
 
     const logout = async () => {
         await supabase.auth.signOut();
         setUser(null);
+        setTenantUser(null);
+        setAuthRole(null);
     };
 
     const addPg = async (pgData) => {
@@ -195,6 +331,7 @@ export const DataProvider = ({ children }) => {
     const transformTenantFromDB = (dbTenant) => ({
         id: dbTenant.id,
         adminId: dbTenant.admin_id,
+        authUserId: dbTenant.auth_user_id,
         pgId: dbTenant.pg_id,
         name: dbTenant.name,
         email: dbTenant.email,
@@ -373,6 +510,41 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const addTenantPaymentRequest = async ({ description, amount }) => {
+        if (!tenantUser) return { success: false, message: 'Tenant not authenticated' };
+
+        const dbRequest = {
+            admin_id: tenantUser.adminId,
+            pg_id: tenantUser.pgId,
+            tenant_id: tenantUser.id,
+            tenant_name: tenantUser.name,
+            amount: Number(amount),
+            description,
+            status: 'Pending'
+        };
+
+        const { data, error } = await supabase
+            .from('payment_requests')
+            .insert([dbRequest])
+            .select()
+            .single();
+
+        if (error) {
+            return { success: false, message: error.message };
+        }
+
+        setTenantPaymentRequests(prev => [transformPaymentFromDB(data), ...prev]);
+        return { success: true };
+    };
+
+    const updateTenantPassword = async (newPassword) => {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) {
+            return { success: false, message: error.message };
+        }
+        return { success: true };
+    };
+
     // Real-time Subscriptions
     useEffect(() => {
         if (!user) return;
@@ -437,10 +609,12 @@ export const DataProvider = ({ children }) => {
 
     return (
         <DataContext.Provider value={{
-            user, login, logout, register, loading,
+            user, tenantUser, tenantPg, tenantRoommates, tenantBills, tenantPaymentRequests,
+            authRole, login, loginAsOwner, loginAsTenant, logout, register, loading,
             pgs, addPg, updatePg, deletePg,
             tenants, addTenant, updateTenant, deleteTenant,
-            paymentRequests, addPaymentRequest, updatePaymentRequestStatus
+            paymentRequests, addPaymentRequest, updatePaymentRequestStatus,
+            addTenantPaymentRequest, updateTenantPassword
         }}>
             {!loading && children}
         </DataContext.Provider>

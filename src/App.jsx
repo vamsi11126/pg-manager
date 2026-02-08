@@ -2,22 +2,36 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
 import LoginPage from './pages/LoginPage';
+import TenantLoginPage from './pages/TenantLoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import PGDetails from './pages/PGDetails';
 import TenantsPage from './pages/TenantsPage';
+import TenantDashboard from './pages/TenantDashboard';
 import { Home, IndianRupee, Settings, LogOut, Package } from 'lucide-react';
 
 const AppContent = () => {
-  const { user, logout } = useData();
+  const { user, tenantUser, authRole, logout } = useData();
 
-  if (!user) {
+  if (!user && !tenantUser) {
     return (
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/tenant/login" element={<TenantLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </Router>
+    );
+  }
+
+  if (authRole === 'tenant') {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/tenant" element={<TenantDashboard />} />
+          <Route path="*" element={<Navigate to="/tenant" />} />
         </Routes>
       </Router>
     );
@@ -56,9 +70,9 @@ const AppContent = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--primary), var(--secondary))' }} />
               <div>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>{user.name}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Owner Account</p>
-              </div>
+              <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>{user.name}</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Owner Account</p>
+            </div>
             </div>
             <button onClick={logout} className="btn" style={{ width: '100%', color: 'var(--danger)', justifyContent: 'flex-start', padding: '0.5rem' }}>
               <LogOut size={20} /> Logout

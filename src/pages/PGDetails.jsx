@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ArrowLeft, Plus, Camera, Utensils, IndianRupee, Bed, UserPlus, CheckCircle2, X, Edit2, AlertCircle, Trash2, Wifi, LayoutGrid, Settings, Zap, Clock, User } from 'lucide-react';
@@ -20,6 +20,7 @@ const PGDetails = () => {
     const [showAddTenant, setShowAddTenant] = useState(false);
     const [aadharError, setAadharError] = useState('');
     const [phoneError, setPhoneError] = useState('');
+    const roomPhotosInputRef = useRef(null);
 
     const [newTenant, setNewTenant] = useState({
         name: '',
@@ -172,10 +173,12 @@ const PGDetails = () => {
     ];
 
     const [foodMenu, setFoodMenu] = useState((pg?.foodMenu && pg.foodMenu.length > 0) ? pg.foodMenu : defaultFoodMenu);
+    const [foodAmountDraft, setFoodAmountDraft] = useState(pg?.foodAmount ?? '');
 
     useEffect(() => {
         if (pg) {
             setFoodMenu((pg.foodMenu && pg.foodMenu.length > 0) ? pg.foodMenu : defaultFoodMenu);
+            setFoodAmountDraft(pg.foodAmount ?? '');
         }
     }, [pg?.id, pg?.foodMenu]);
 
@@ -232,6 +235,67 @@ const PGDetails = () => {
         }
     };
 
+    const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
+    const handleRoomPhotosSelected = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const photoEntries = await Promise.all(
+            files.map(async (file) => ({
+                id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                name: file.name,
+                url: await readFileAsDataUrl(file)
+            }))
+        );
+
+        setNewRoom(prev => ({
+            ...prev,
+            photos: [...(prev.photos || []), ...photoEntries]
+        }));
+
+        e.target.value = '';
+    };
+
+    const removeRoomPhoto = (photoId) => {
+        setNewRoom(prev => ({
+            ...prev,
+            photos: (prev.photos || []).filter(p => p.id !== photoId)
+        }));
+    };
+
+    const handleEditRoomPhotosSelected = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const photoEntries = await Promise.all(
+            files.map(async (file) => ({
+                id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                name: file.name,
+                url: await readFileAsDataUrl(file)
+            }))
+        );
+
+        setShowEditRoom(prev => prev ? ({
+            ...prev,
+            photos: [...(prev.photos || []), ...photoEntries]
+        }) : prev);
+
+        e.target.value = '';
+    };
+
+    const removeEditRoomPhoto = (photoId) => {
+        setShowEditRoom(prev => prev ? ({
+            ...prev,
+            photos: (prev.photos || []).filter(p => p.id !== photoId)
+        }) : prev);
+    };
+
     if (!pg) return <div className="container">PG not found</div>;
 
     const handleAddRoom = (e) => {
@@ -262,7 +326,7 @@ const PGDetails = () => {
     };
 
     const saveFoodMenu = () => {
-        updatePg({ ...pg, foodMenu, foodAmount: pg.foodAmount });
+        updatePg({ ...pg, foodMenu, foodAmount: foodAmountDraft });
         setShowEditFood(false);
     };
 
@@ -1446,10 +1510,59 @@ const PGDetails = () => {
                                         padding: '2rem',
                                         textAlign: 'center',
                                         cursor: 'pointer'
-                                    }}>
+                                    }}
+                                        onClick={() => roomPhotosInputRef.current?.click()}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                roomPhotosInputRef.current?.click();
+                                            }
+                                        }}
+                                    >
                                         <Camera size={24} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
                                         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Click to upload photos</p>
+                                        <input
+                                            ref={roomPhotosInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            style={{ display: 'none' }}
+                                            onChange={handleRoomPhotosSelected}
+                                        />
                                     </div>
+                                    {(newRoom.photos?.length > 0) && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
+                                            {newRoom.photos.map(photo => (
+                                                <div key={photo.id} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-glass)' }}>
+                                                    <img
+                                                        src={photo.url}
+                                                        alt={photo.name || 'Room photo'}
+                                                        style={{ width: '100%', height: '80px', objectFit: 'cover', display: 'block' }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeRoomPhoto(photo.id)}
+                                                        className="btn btn-outline"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '6px',
+                                                            right: '6px',
+                                                            padding: '0.2rem 0.35rem',
+                                                            fontSize: '0.7rem',
+                                                            lineHeight: 1,
+                                                            background: 'rgba(0,0,0,0.6)',
+                                                            color: '#fff',
+                                                            borderColor: 'transparent'
+                                                        }}
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -1587,6 +1700,68 @@ const PGDetails = () => {
                                         /> Include Food
                                     </label>
                                 </div>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Photos</label>
+                                    <div style={{
+                                        border: '2px dashed var(--border-glass)',
+                                        borderRadius: '12px',
+                                        padding: '2rem',
+                                        textAlign: 'center',
+                                        cursor: 'pointer'
+                                    }}
+                                        onClick={() => document.getElementById('edit-room-photos-input')?.click()}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                document.getElementById('edit-room-photos-input')?.click();
+                                            }
+                                        }}
+                                    >
+                                        <Camera size={24} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Click to upload photos</p>
+                                        <input
+                                            id="edit-room-photos-input"
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            style={{ display: 'none' }}
+                                            onChange={handleEditRoomPhotosSelected}
+                                        />
+                                    </div>
+                                    {(showEditRoom.photos?.length > 0) && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
+                                            {showEditRoom.photos.map(photo => (
+                                                <div key={photo.id} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-glass)' }}>
+                                                    <img
+                                                        src={photo.url}
+                                                        alt={photo.name || 'Room photo'}
+                                                        style={{ width: '100%', height: '80px', objectFit: 'cover', display: 'block' }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeEditRoomPhoto(photo.id)}
+                                                        className="btn btn-outline"
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '6px',
+                                                            right: '6px',
+                                                            padding: '0.2rem 0.35rem',
+                                                            fontSize: '0.7rem',
+                                                            lineHeight: 1,
+                                                            background: 'rgba(0,0,0,0.6)',
+                                                            color: '#fff',
+                                                            borderColor: 'transparent'
+                                                        }}
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                                     <button type="button" onClick={() => setShowEditRoom(null)} className="btn btn-outline">Cancel</button>
                                     <button type="submit" className="btn btn-primary">Save Changes</button>
@@ -1618,8 +1793,8 @@ const PGDetails = () => {
                                     type="number"
                                     className="input-field"
                                     style={{ maxWidth: '200px' }}
-                                    value={pg.foodAmount || ''}
-                                    onChange={(e) => updatePg({ ...pg, foodAmount: e.target.value })}
+                                    value={foodAmountDraft}
+                                    onChange={(e) => setFoodAmountDraft(e.target.value)}
                                     placeholder="e.g. 3000"
                                     onKeyDown={handleNumberInput}
                                 />
@@ -1752,13 +1927,14 @@ const PGDetails = () => {
                                     {phoneError && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{phoneError}</p>}
                                 </div>
                                 <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email (Optional)</label>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email *</label>
                                     <input
                                         type="email"
                                         className="input-field"
                                         value={newTenant.email}
                                         onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
                                         placeholder="tenant@example.com"
+                                        required
                                     />
                                 </div>
                                 <div style={{ marginBottom: '1rem' }}>

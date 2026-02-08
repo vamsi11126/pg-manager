@@ -43,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_pgs_admin_id ON pgs(admin_id);
 CREATE TABLE IF NOT EXISTS tenants (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   pg_id UUID REFERENCES pgs(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
@@ -73,6 +74,41 @@ CREATE POLICY "Users can manage their own tenants"
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_tenants_admin_id ON tenants(admin_id);
 CREATE INDEX IF NOT EXISTS idx_tenants_pg_id ON tenants(pg_id);
+CREATE INDEX IF NOT EXISTS idx_tenants_auth_user_id ON tenants(auth_user_id);
+
+-- Allow tenants to view their own profile and roommates in the same room
+DROP POLICY IF EXISTS "Tenants can view their own tenant record" ON tenants;
+CREATE POLICY "Tenants can view their own tenant record"
+  ON tenants
+  FOR SELECT
+  USING (auth_user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Tenants can view their own tenant record by email" ON tenants;
+CREATE POLICY "Tenants can view their own tenant record by email"
+  ON tenants
+  FOR SELECT
+  USING (email = (auth.jwt() ->> 'email'));
+
+DROP POLICY IF EXISTS "Tenants can link their auth user" ON tenants;
+CREATE POLICY "Tenants can link their auth user"
+  ON tenants
+  FOR UPDATE
+  USING (email = (auth.jwt() ->> 'email'))
+  WITH CHECK (email = (auth.jwt() ->> 'email'));
+
+DROP POLICY IF EXISTS "Tenants can view roommates" ON tenants;
+CREATE POLICY "Tenants can view roommates"
+  ON tenants
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM tenants t2
+      WHERE t2.auth_user_id = auth.uid()
+        AND t2.pg_id = tenants.pg_id
+        AND t2.room_number = tenants.room_number
+    )
+  );
 
 -- =====================================================
 -- PAYMENT REQUESTS TABLE
@@ -109,6 +145,78 @@ CREATE INDEX IF NOT EXISTS idx_payment_requests_pg_id ON payment_requests(pg_id)
 CREATE INDEX IF NOT EXISTS idx_payment_requests_tenant_id ON payment_requests(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_payment_requests_status ON payment_requests(status);
 
+-- Allow tenants to view and create their own payment requests
+DROP POLICY IF EXISTS "Tenants can view their own payment requests" ON payment_requests;
+CREATE POLICY "Tenants can view their own payment requests"
+  ON payment_requests
+  FOR SELECT
+  USING (
+    tenant_id IN (
+      SELECT id FROM tenants WHERE auth_user_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Tenants can create payment requests" ON payment_requests;
+CREATE POLICY "Tenants can create payment requests"
+  ON payment_requests
+  FOR INSERT
+  WITH CHECK (
+    tenant_id IN (
+      SELECT id FROM tenants WHERE auth_user_id = auth.uid()
+    )
+  );
+
+-- Allow tenants to view their PG details
+DROP POLICY IF EXISTS "Tenants can view their PG" ON pgs;
+CREATE POLICY "Tenants can view their PG"
+  ON pgs
+  FOR SELECT
+  USING (
+    id IN (
+      SELECT pg_id FROM tenants WHERE auth_user_id = auth.uid()
+    )
+  );
+
+-- =====================================================
+-- TENANT BILLS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS tenant_bills (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  pg_id UUID REFERENCES pgs(id) ON DELETE CASCADE NOT NULL,
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+  bill_type TEXT NOT NULL CHECK (bill_type IN ('Rent', 'Food', 'Electricity', 'Other')),
+  amount NUMERIC NOT NULL,
+  status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Paid')),
+  due_date DATE,
+  month_label TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE tenant_bills ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage their own tenant bills" ON tenant_bills;
+CREATE POLICY "Users can manage their own tenant bills"
+  ON tenant_bills
+  FOR ALL
+  USING (admin_id = auth.uid());
+
+DROP POLICY IF EXISTS "Tenants can view their own bills" ON tenant_bills;
+CREATE POLICY "Tenants can view their own bills"
+  ON tenant_bills
+  FOR SELECT
+  USING (
+    tenant_id IN (
+      SELECT id FROM tenants WHERE auth_user_id = auth.uid()
+    )
+  );
+
+CREATE INDEX IF NOT EXISTS idx_tenant_bills_admin_id ON tenant_bills(admin_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_bills_pg_id ON tenant_bills(pg_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_bills_tenant_id ON tenant_bills(tenant_id);
+
 -- =====================================================
 -- AUTOMATIC UPDATE TIMESTAMP TRIGGER
 -- =====================================================
@@ -125,6 +233,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS update_pgs_updated_at ON pgs;
 DROP TRIGGER IF EXISTS update_tenants_updated_at ON tenants;
 DROP TRIGGER IF EXISTS update_payment_requests_updated_at ON payment_requests;
+DROP TRIGGER IF EXISTS update_tenant_bills_updated_at ON tenant_bills;
 
 -- Trigger for pgs table
 CREATE TRIGGER update_pgs_updated_at
@@ -141,6 +250,12 @@ CREATE TRIGGER update_tenants_updated_at
 -- Trigger for payment_requests table
 CREATE TRIGGER update_payment_requests_updated_at
     BEFORE UPDATE ON payment_requests
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for tenant_bills table
+CREATE TRIGGER update_tenant_bills_updated_at
+    BEFORE UPDATE ON tenant_bills
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
-import { LogIn, Shield } from 'lucide-react';
+import { LogIn, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const LoginPage = () => {
-    const navigate = useNavigate();
+const TenantLoginPage = () => {
+    const { loginAsTenant } = useData();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { loginAsOwner } = useData();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const res = await loginAsOwner(email, password);
+        const res = await loginAsTenant(email, password);
         if (!res?.success) {
             setError(res?.message || 'Login failed');
         }
@@ -21,15 +20,15 @@ const LoginPage = () => {
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem' }}>
+            <div className="glass-card" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                    <div style={{ background: 'var(--primary)', padding: '1rem', borderRadius: '50%' }}>
-                        <Shield size={32} color="white" />
+                    <div style={{ background: 'var(--secondary)', padding: '1rem', borderRadius: '50%' }}>
+                        <User size={32} color="white" />
                     </div>
                 </div>
-                <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Owner Login</h2>
+                <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Tenant Login</h2>
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-                    Manage your PGs and Tenants in one place
+                    View bills and raise payment tickets
                 </p>
 
                 <form onSubmit={handleSubmit}>
@@ -38,7 +37,7 @@ const LoginPage = () => {
                         <input
                             type="email"
                             className="input-field"
-                            placeholder="owner@example.com"
+                            placeholder="tenant@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -67,14 +66,11 @@ const LoginPage = () => {
                 )}
 
                 <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Don't have an account? <span onClick={() => navigate('/register')} style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Register PG</span>
-                </p>
-                <p style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Are you a tenant? <span onClick={() => navigate('/tenant/login')} style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Tenant Login</span>
+                    Are you an owner? <Link to="/login" style={{ color: 'var(--secondary)', textDecoration: 'underline' }}>Owner Login</Link>
                 </p>
             </div>
         </div>
     );
 };
 
-export default LoginPage;
+export default TenantLoginPage;
