@@ -26,6 +26,9 @@ export const DataProvider = ({ children }) => {
         electricityData: dbPg.electricity_data ?? {},
         eBillRate: dbPg.e_bill_rate ?? 10,
         foodAmount: dbPg.food_amount ?? 0,
+        facilities: dbPg.facilities ?? [],
+        neighborhoodDetails: dbPg.neighborhood_details ?? '',
+        galleryPhotos: dbPg.gallery_photos ?? [],
         createdAt: dbPg.created_at,
         updatedAt: dbPg.updated_at
     });
@@ -39,7 +42,10 @@ export const DataProvider = ({ children }) => {
         wifi_details: pg.wifiDetails ?? pg.wifi_details ?? [],
         electricity_data: pg.electricityData ?? pg.electricity_data ?? {},
         e_bill_rate: pg.eBillRate ?? pg.e_bill_rate ?? 10,
-        food_amount: pg.foodAmount ?? pg.food_amount ?? 0
+        food_amount: pg.foodAmount ?? pg.food_amount ?? 0,
+        facilities: pg.facilities ?? [],
+        neighborhood_details: pg.neighborhoodDetails ?? pg.neighborhood_details ?? '',
+        gallery_photos: pg.galleryPhotos ?? pg.gallery_photos ?? []
     });
 
     const fetchTenantByAuthId = async (_authUserId, email) => {

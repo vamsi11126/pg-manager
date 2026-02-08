@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS pgs (
   electricity_data JSONB DEFAULT '{}'::jsonb,
   e_bill_rate NUMERIC DEFAULT 10,
   food_amount NUMERIC DEFAULT 0,
+  facilities JSONB DEFAULT '[]'::jsonb,
+  neighborhood_details TEXT DEFAULT '',
+  gallery_photos JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -33,6 +36,13 @@ CREATE POLICY "Users can manage their own pgs"
   ON pgs
   FOR ALL
   USING (admin_id = auth.uid());
+
+-- Policy: Public can read PGs (for landing pages)
+DROP POLICY IF EXISTS "Public can read pgs" ON pgs;
+CREATE POLICY "Public can read pgs"
+  ON pgs
+  FOR SELECT
+  USING (true);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_pgs_admin_id ON pgs(admin_id);
@@ -75,6 +85,18 @@ CREATE POLICY "Users can manage their own tenants"
 CREATE INDEX IF NOT EXISTS idx_tenants_admin_id ON tenants(admin_id);
 CREATE INDEX IF NOT EXISTS idx_tenants_pg_id ON tenants(pg_id);
 CREATE INDEX IF NOT EXISTS idx_tenants_auth_user_id ON tenants(auth_user_id);
+
+-- =====================================================
+-- PROFILES TABLE (PUBLIC READ FOR LANDING PAGES)
+-- =====================================================
+-- NOTE: profiles table is created by Supabase auth. This section only adds policies.
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can read profiles" ON profiles;
+CREATE POLICY "Public can read profiles"
+  ON profiles
+  FOR SELECT
+  USING (true);
 
 -- Allow tenants to view their own profile and roommates in the same room
 DROP POLICY IF EXISTS "Tenants can view their own tenant record" ON tenants;

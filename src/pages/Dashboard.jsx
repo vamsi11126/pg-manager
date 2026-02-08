@@ -6,13 +6,29 @@ import { Link } from 'react-router-dom';
 const Dashboard = () => {
     const { pgs, tenants, addPg } = useData();
     const [showAddPg, setShowAddPg] = useState(false);
-    const [newPg, setNewPg] = useState({ name: '', address: '', rooms: [], foodMenu: [] });
+    const [newPg, setNewPg] = useState({
+        name: '',
+        address: '',
+        rooms: [],
+        foodMenu: [],
+        facilities: [],
+        neighborhoodDetails: '',
+        galleryPhotos: []
+    });
 
     const handleAddPg = (e) => {
         e.preventDefault();
         addPg(newPg);
         setShowAddPg(false);
-        setNewPg({ name: '', address: '', rooms: [], foodMenu: [] });
+        setNewPg({
+            name: '',
+            address: '',
+            rooms: [],
+            foodMenu: [],
+            facilities: [],
+            neighborhoodDetails: '',
+            galleryPhotos: []
+        });
     };
 
     return (

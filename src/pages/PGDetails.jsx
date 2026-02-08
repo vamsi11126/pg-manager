@@ -14,6 +14,7 @@ import TenantsSection from '../components/pg-details/TenantsSection';
 import VacancySection from '../components/pg-details/VacancySection';
 import PgHeaderTabs from '../components/pg-details/PgHeaderTabs';
 import PgEditModal from '../components/pg-details/PgEditModal';
+import HighlightsSection from '../components/pg-details/HighlightsSection';
 
 const PGDetails = () => {
     const { id } = useParams();
@@ -611,6 +612,12 @@ const PGDetails = () => {
             {activeTab === 'vacancy' && (
                 <VacancySection
                     getVacantRooms={getVacantRooms}
+                />
+            )}
+            {activeTab === 'highlights' && (
+                <HighlightsSection
+                    pg={pg}
+                    updatePg={updatePg}
                 />
             )}
 

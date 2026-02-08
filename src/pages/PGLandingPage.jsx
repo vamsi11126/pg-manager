@@ -25,7 +25,10 @@ const normalizePg = (dbPg) => ({
     wifiDetails: dbPg.wifi_details ?? [],
     electricityData: dbPg.electricity_data ?? {},
     eBillRate: dbPg.e_bill_rate ?? 10,
-    foodAmount: dbPg.food_amount ?? 0
+    foodAmount: dbPg.food_amount ?? 0,
+    facilities: dbPg.facilities ?? [],
+    neighborhoodDetails: dbPg.neighborhood_details ?? '',
+    galleryPhotos: dbPg.gallery_photos ?? []
 });
 
 const PGLandingPage = () => {
@@ -119,6 +122,15 @@ const PGLandingPage = () => {
 
     const facilities = useMemo(() => {
         if (!pg) return [];
+        if (Array.isArray(pg.facilities) && pg.facilities.length > 0) {
+            return pg.facilities.map(item => ({
+                label: item,
+                icon: Sparkles,
+                active: true,
+                desc: 'Premium amenity available on-site.'
+            }));
+        }
+
         const hasWifi = (pg.wifiDetails || []).length > 0;
         const hasFood = (pg.foodMenu || []).length > 0 || (pg.foodAmount || 0) > 0;
         const hasAttachedBath = (pg.rooms || []).some(r => r.attachedBath);
@@ -133,6 +145,7 @@ const PGLandingPage = () => {
     }, [pg]);
 
     const menu = (pg?.foodMenu && pg.foodMenu.length > 0) ? pg.foodMenu : defaultFoodMenu;
+    const gallery = Array.isArray(pg?.galleryPhotos) ? pg.galleryPhotos.slice(0, 5) : [];
 
     if (loading) {
         return (
@@ -199,21 +212,39 @@ const PGLandingPage = () => {
 
                 <section className="lp-section">
                     <h2 className="lp-section-title">Vacant Rooms</h2>
-                    <div className="lp-grid">
+                    <div className="lp-scroll">
                         {vacancyRows.length === 0 ? (
-                            <div className="lp-card">
+                            <div className="lp-card lp-scroll-card">
                                 <h3>Availability to be confirmed</h3>
                                 <p>Contact us for the latest vacancy details.</p>
                             </div>
                         ) : (
-                            vacancyRows.slice(0, 6).map(room => (
-                                <div className="lp-card" key={room.number}>
+                            vacancyRows.slice(0, 10).map(room => (
+                                <div className="lp-card lp-scroll-card" key={room.number}>
                                     <span className="lp-badge">{room.available > 0 ? `${room.available} Slots Left` : 'Waitlist'}</span>
                                     <h3 style={{ marginTop: '0.75rem' }}>Room {room.number}</h3>
                                     <p style={{ color: 'var(--lp-ink-muted)' }}>{room.type} • Capacity {room.capacity}</p>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem' }}>
                                         <BedDouble size={16} /> <span>{room.available > 0 ? 'Ready to move' : 'Fully occupied'}</span>
                                     </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </section>
+
+                <section className="lp-section">
+                    <h2 className="lp-section-title">Gallery</h2>
+                    <div className="lp-scroll">
+                        {gallery.length === 0 ? (
+                            <div className="lp-card lp-scroll-card">
+                                <h3>Gallery coming soon</h3>
+                                <p>Photos will be updated by the PG owner.</p>
+                            </div>
+                        ) : (
+                            gallery.map(photo => (
+                                <div className="lp-card lp-scroll-card lp-image-card" key={photo.id || photo.url}>
+                                    <img src={photo.url} alt={photo.name || 'PG gallery'} />
                                 </div>
                             ))
                         )}
@@ -269,6 +300,9 @@ const PGLandingPage = () => {
                                 <h3 style={{ margin: 0 }}>Address</h3>
                             </div>
                             <p style={{ color: 'var(--lp-ink-muted)', lineHeight: 1.6 }}>{pg.address}</p>
+                            <p style={{ marginTop: '0.75rem', color: 'var(--lp-ink-muted)', lineHeight: 1.6 }}>
+                                {pg.neighborhoodDetails || 'Neighborhood highlights will be shared shortly.'}
+                            </p>
                             <p style={{ marginTop: '1rem', fontWeight: 600 }}>Easy access to daily essentials.</p>
                         </div>
                         <div className="lp-map">

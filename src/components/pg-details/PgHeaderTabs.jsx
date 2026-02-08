@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Bed, Edit2, LayoutGrid, Plus, Trash2, UserPlus, Utensils, Wifi, Zap } from 'lucide-react';
+import { ArrowLeft, Bed, Edit2, LayoutGrid, Plus, Sparkles, Trash2, UserPlus, Utensils, Wifi, Zap } from 'lucide-react';
 
 const PgHeaderTabs = ({
     pg,
@@ -99,6 +99,13 @@ const PgHeaderTabs = ({
                     style={{ background: activeTab === 'vacancy' ? 'var(--primary)' : 'transparent' }}
                 >
                     <LayoutGrid size={18} /> Vacancy
+                </button>
+                <button
+                    onClick={() => setActiveTab('highlights')}
+                    className={`btn ${activeTab === 'highlights' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ background: activeTab === 'highlights' ? 'var(--primary)' : 'transparent' }}
+                >
+                    <Sparkles size={18} /> Highlights
                 </button>
                 <button
                     onClick={() => setActiveTab('food')}
