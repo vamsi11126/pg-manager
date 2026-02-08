@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import PGDetails from './pages/PGDetails';
 import TenantsPage from './pages/TenantsPage';
 import TenantDashboard from './pages/TenantDashboard';
+import PGLandingPage from './pages/PGLandingPage';
 import { Home, IndianRupee, Settings, LogOut, Package } from 'lucide-react';
 
 const AppContent = () => {
@@ -22,6 +23,7 @@ const AppContent = () => {
       <Router>
         <Routes>
           <Route path="/tenant" element={<TenantDashboard />} />
+          <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
           <Route path="*" element={<Navigate to="/tenant" />} />
         </Routes>
       </Router>
@@ -35,6 +37,7 @@ const AppContent = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/tenant/login" element={<TenantLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </Router>
@@ -89,6 +92,7 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/pg/:id" element={<PGDetails />} />
+            <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
             <Route path="/tenants" element={<TenantsPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

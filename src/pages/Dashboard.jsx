@@ -92,12 +92,15 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <Link to={`/pg/${pg.id}`} className="btn btn-primary" style={{ flex: 1, fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                                <Link to={`/pg/${pg.id}`} className="btn btn-primary" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
                                     Manage Details
                                 </Link>
-                                <Link to={`/tenants?pgId=${pg.id}`} className="btn btn-outline" style={{ flex: 1, fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
+                                <Link to={`/tenants?pgId=${pg.id}`} className="btn btn-outline" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
                                     Pay Requests
+                                </Link>
+                                <Link to={`/pg/${pg.id}/landingpage`} className="btn btn-outline" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
+                                    Landing Page
                                 </Link>
                             </div>
                         </div>
