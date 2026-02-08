@@ -42,46 +42,53 @@ export const DataProvider = ({ children }) => {
         food_amount: pg.foodAmount ?? pg.food_amount ?? 0
     });
 
-    const fetchTenantByAuthId = async (authUserId, email) => {
-        const { data: tenantData, error: tenantError } = await supabase
-            .from('tenants')
-            .select('*')
-            .eq('auth_user_id', authUserId)
-            .single();
+    const fetchTenantByAuthId = async (_authUserId, email) => {
+        let resolvedTenant = null;
 
-        let resolvedTenant = tenantData;
+        if (email) {
+            const normalizedEmail = email.trim().toLowerCase();
+            const { data: tenantByEmail, error: tenantByEmailError } = await supabase
+                .from('tenants')
+                .select('*')
+                .ilike('email', normalizedEmail)
+                .maybeSingle();
+            if (tenantByEmailError) {
+                console.error('Error fetching tenant by email:', tenantByEmailError);
+            }
+            resolvedTenant = tenantByEmail || null;
 
-        if (tenantError || !tenantData) {
-            if (email) {
-                const { data: tenantByEmail } = await supabase
+            if (!resolvedTenant) {
+                const { data: tenantCandidates, error: tenantCandidatesError } = await supabase
                     .from('tenants')
                     .select('*')
-                    .eq('email', email)
-                    .single();
-                resolvedTenant = tenantByEmail || null;
-
-                if (resolvedTenant && !resolvedTenant.auth_user_id) {
-                    await supabase
-                        .from('tenants')
-                        .update({ auth_user_id: authUserId })
-                        .eq('id', resolvedTenant.id);
+                    .ilike('email', `%${normalizedEmail}%`)
+                    .limit(5);
+                if (tenantCandidatesError) {
+                    console.error('Error fetching tenant email candidates:', tenantCandidatesError);
+                } else if (Array.isArray(tenantCandidates)) {
+                    resolvedTenant = tenantCandidates.find(t => (t.email || '').trim().toLowerCase() === normalizedEmail) || null;
                 }
             }
         }
 
         if (!resolvedTenant) {
             setTenantUser(null);
-            return;
+            console.warn('Tenant record not found for email:', email);
+            return null;
         }
 
         const tenant = transformTenantFromDB(resolvedTenant);
         setTenantUser(tenant);
 
-        const { data: pgData } = await supabase
+        const { data: pgData, error: pgError } = await supabase
             .from('pgs')
             .select('*')
             .eq('id', tenant.pgId)
-            .single();
+            .maybeSingle();
+
+        if (pgError) {
+            console.error('Error fetching tenant PG:', pgError);
+        }
 
         if (pgData) {
             setTenantPg(transformPgFromDB(pgData));
@@ -102,12 +109,16 @@ export const DataProvider = ({ children }) => {
             .order('created_at', { ascending: false });
         setTenantPaymentRequests((tenantRequests || []).map(transformPaymentFromDB));
 
-        const { data: bills } = await supabase
+        const { data: bills, error: billsError } = await supabase
             .from('tenant_bills')
             .select('*')
             .eq('tenant_id', tenant.id)
             .order('due_date', { ascending: false });
+        if (billsError) {
+            console.error('Error fetching tenant bills:', billsError);
+        }
         setTenantBills(bills || []);
+        return resolvedTenant;
     };
 
     // Auth State Listener
@@ -130,7 +141,16 @@ export const DataProvider = ({ children }) => {
                 } else {
                     setAuthRole('tenant');
                     setUser(null);
-                    await fetchTenantByAuthId(session.user.id, session.user.email);
+                    const tenant = await fetchTenantByAuthId(session.user.id, session.user.email);
+                    if (!tenant) {
+                        await supabase.auth.signOut();
+                        setAuthRole(null);
+                        setTenantUser(null);
+                        setTenantPg(null);
+                        setTenantRoommates([]);
+                        setTenantBills([]);
+                        setTenantPaymentRequests([]);
+                    }
                 }
             } else {
                 setUser(null);
@@ -211,8 +231,9 @@ export const DataProvider = ({ children }) => {
     };
 
     const loginAsOwner = async (email, password) => {
+        const normalizedEmail = email.trim().toLowerCase();
         const { data, error } = await supabase.auth.signInWithPassword({
-            email,
+            email: normalizedEmail,
             password,
         });
 
@@ -234,8 +255,9 @@ export const DataProvider = ({ children }) => {
     };
 
     const loginAsTenant = async (email, password) => {
+        const normalizedEmail = email.trim().toLowerCase();
         const { data, error } = await supabase.auth.signInWithPassword({
-            email,
+            email: normalizedEmail,
             password,
         });
 
@@ -252,6 +274,12 @@ export const DataProvider = ({ children }) => {
         if (profile?.role === 'admin') {
             await supabase.auth.signOut();
             return { success: false, message: 'This login is for tenants only. Please use owner login.' };
+        }
+
+        const tenant = await fetchTenantByAuthId(data.user.id, data.user.email);
+        if (!tenant) {
+            await supabase.auth.signOut();
+            return { success: false, message: 'No tenant record found for this account. Please contact the PG owner.' };
         }
         return { success: true };
     };
@@ -331,7 +359,6 @@ export const DataProvider = ({ children }) => {
     const transformTenantFromDB = (dbTenant) => ({
         id: dbTenant.id,
         adminId: dbTenant.admin_id,
-        authUserId: dbTenant.auth_user_id,
         pgId: dbTenant.pg_id,
         name: dbTenant.name,
         email: dbTenant.email,
@@ -348,7 +375,7 @@ export const DataProvider = ({ children }) => {
     // Helper: Convert frontend tenant to DB format
     const transformTenantToDB = (tenant) => ({
         name: tenant.name,
-        email: tenant.email,
+        email: tenant.email ? tenant.email.trim().toLowerCase() : tenant.email,
         phone: tenant.phone,
         profession: tenant.profession,
         aadhar: tenant.aadhar,

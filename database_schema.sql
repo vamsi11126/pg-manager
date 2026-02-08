@@ -213,6 +213,48 @@ CREATE POLICY "Tenants can view their own bills"
     )
   );
 
+-- =====================================================
+-- TENANT BILLS (EMAIL-BASED TENANT ACCESS)
+-- =====================================================
+DROP POLICY IF EXISTS "Tenants can view their own tenant bills" ON tenant_bills;
+CREATE POLICY "Tenants can view their own tenant bills"
+  ON tenant_bills
+  FOR SELECT
+  USING (
+    tenant_id IN (
+      SELECT id
+      FROM tenants
+      WHERE lower(trim(email)) = lower(trim(auth.jwt() ->> 'email'))
+    )
+  );
+
+-- =====================================================
+-- PAYMENT REQUESTS (EMAIL-BASED TENANT ACCESS)
+-- =====================================================
+DROP POLICY IF EXISTS "Tenants can create payment requests" ON payment_requests;
+CREATE POLICY "Tenants can create payment requests"
+  ON payment_requests
+  FOR INSERT
+  WITH CHECK (
+    tenant_id IN (
+      SELECT id
+      FROM tenants
+      WHERE lower(trim(email)) = lower(trim(auth.jwt() ->> 'email'))
+    )
+  );
+
+DROP POLICY IF EXISTS "Tenants can view their own payment requests" ON payment_requests;
+CREATE POLICY "Tenants can view their own payment requests"
+  ON payment_requests
+  FOR SELECT
+  USING (
+    tenant_id IN (
+      SELECT id
+      FROM tenants
+      WHERE lower(trim(email)) = lower(trim(auth.jwt() ->> 'email'))
+    )
+  );
+
 CREATE INDEX IF NOT EXISTS idx_tenant_bills_admin_id ON tenant_bills(admin_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_bills_pg_id ON tenant_bills(pg_id);
 CREATE INDEX IF NOT EXISTS idx_tenant_bills_tenant_id ON tenant_bills(tenant_id);

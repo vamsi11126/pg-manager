@@ -11,7 +11,22 @@ import TenantDashboard from './pages/TenantDashboard';
 import { Home, IndianRupee, Settings, LogOut, Package } from 'lucide-react';
 
 const AppContent = () => {
-  const { user, tenantUser, authRole, logout } = useData();
+  const { user, tenantUser, authRole, logout, loading } = useData();
+
+  if (loading) {
+    return null;
+  }
+
+  if (authRole === 'tenant') {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/tenant" element={<TenantDashboard />} />
+          <Route path="*" element={<Navigate to="/tenant" />} />
+        </Routes>
+      </Router>
+    );
+  }
 
   if (!user && !tenantUser) {
     return (
@@ -21,17 +36,6 @@ const AppContent = () => {
           <Route path="/tenant/login" element={<TenantLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </Router>
-    );
-  }
-
-  if (authRole === 'tenant') {
-    return (
-      <Router>
-        <Routes>
-          <Route path="/tenant" element={<TenantDashboard />} />
-          <Route path="*" element={<Navigate to="/tenant" />} />
         </Routes>
       </Router>
     );

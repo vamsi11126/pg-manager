@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useData } from '../context/DataContext';
 import { IndianRupee, Phone, CheckCircle2, Clock, LogOut, KeyRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const TenantDashboard = () => {
     const { tenantUser, tenantPg, tenantRoommates, tenantPaymentRequests, addTenantPaymentRequest, updateTenantPassword, logout } = useData();
@@ -24,6 +25,11 @@ const TenantDashboard = () => {
                     <p style={{ color: 'var(--text-muted)' }}>
                         This account is not linked to any tenant record. Please contact the PG owner.
                     </p>
+                    <p style={{ marginTop: '1rem' }}>
+                        <Link to="/tenant/login" style={{ color: 'var(--secondary)', textDecoration: 'underline' }}>
+                            Back to Tenant Login
+                        </Link>
+                    </p>
                 </div>
             </div>
         );
@@ -41,6 +47,11 @@ const TenantDashboard = () => {
             return;
         }
         setMessage('Payment ticket raised successfully.');
+    };
+
+    const hasTicketForMonth = (type) => {
+        const prefix = `${type} Payment - ${monthLabel}`;
+        return tenantPaymentRequests.some(req => (req.description || '').startsWith(prefix));
     };
 
     const handleRaiseTicket = async (e) => {
@@ -114,9 +125,15 @@ const TenantDashboard = () => {
                                 className="btn btn-primary"
                                 style={{ marginTop: '0.75rem' }}
                                 onClick={() => raiseQuickTicket('Rent', rentBill)}
+                                disabled={hasTicketForMonth('Rent')}
                             >
                                 <IndianRupee size={16} /> Raise Ticket
                             </button>
+                            {hasTicketForMonth('Rent') && (
+                                <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    Ticket already raised for this month.
+                                </p>
+                            )}
                         </div>
                         <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -130,10 +147,15 @@ const TenantDashboard = () => {
                                 className="btn btn-primary"
                                 style={{ marginTop: '0.75rem' }}
                                 onClick={() => raiseQuickTicket('Food', foodBill)}
-                                disabled={!tenantUser.withFood}
+                                disabled={!tenantUser.withFood || hasTicketForMonth('Food')}
                             >
                                 <IndianRupee size={16} /> Raise Ticket
                             </button>
+                            {hasTicketForMonth('Food') && (
+                                <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    Ticket already raised for this month.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -190,9 +212,14 @@ const TenantDashboard = () => {
                                 placeholder="e.g. Paid via UPI"
                             />
                         </div>
-                        <button type="submit" className="btn btn-primary">
+                        <button type="submit" className="btn btn-primary" disabled={hasTicketForMonth(ticketType)}>
                             <IndianRupee size={16} /> Raise Ticket
                         </button>
+                        {hasTicketForMonth(ticketType) && (
+                            <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                You already raised a {ticketType.toLowerCase()} ticket for this month.
+                            </p>
+                        )}
                     </form>
                 </div>
 

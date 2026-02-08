@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { LogIn, Shield } from 'lucide-react';
 
 const LoginPage = () => {
-    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -67,10 +66,10 @@ const LoginPage = () => {
                 )}
 
                 <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Don't have an account? <span onClick={() => navigate('/register')} style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Register PG</span>
+                    Don't have an account? <Link to="/register" style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Register PG</Link>
                 </p>
                 <p style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Are you a tenant? <span onClick={() => navigate('/tenant/login')} style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Tenant Login</span>
+                    Are you a tenant? <Link to="/tenant/login" style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Tenant Login</Link>
                 </p>
             </div>
         </div>

@@ -159,14 +159,17 @@ app.post('/create-tenant-login', async (req, res) => {
     if (!tenantId) {
       return res.status(400).json({ error: 'tenantId is required' });
     }
+    console.log('[create-tenant-login] tenantId:', tenantId);
+    console.log('[create-tenant-login] SUPABASE_URL:', SUPABASE_URL);
 
     const { data: tenantRow, error: tenantError } = await supabaseAdmin
       .from('tenants')
-      .select('id,admin_id,pg_id,name,email,phone,profession,aadhar,room_number,rent,advance,with_food,joining_date,auth_user_id')
+      .select('id,admin_id,pg_id,name,email,phone,profession,aadhar,room_number,rent,advance,with_food,joining_date')
       .eq('id', tenantId)
       .single();
 
     if (tenantError || !tenantRow) {
+      console.error('[create-tenant-login] tenant lookup failed:', tenantError);
       return res.status(404).json({ error: 'Tenant not found' });
     }
 
@@ -178,7 +181,7 @@ app.post('/create-tenant-login', async (req, res) => {
 
     const finalPassword = password || DEFAULT_TENANT_PASSWORD;
 
-    let authUserId = tenantRow.auth_user_id;
+    let authUserId = null;
     if (!authUserId) {
       const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: tenantRow.email,
@@ -191,7 +194,6 @@ app.post('/create-tenant-login', async (req, res) => {
         return res.status(400).json({ error: createError.message });
       }
       authUserId = created.user?.id;
-      await supabaseAdmin.from('tenants').update({ auth_user_id: authUserId }).eq('id', tenantRow.id);
     } else if (password) {
       await supabaseAdmin.auth.admin.updateUserById(authUserId, { password: finalPassword });
     }
