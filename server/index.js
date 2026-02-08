@@ -191,9 +191,27 @@ app.post('/create-tenant-login', async (req, res) => {
       });
 
       if (createError) {
-        return res.status(400).json({ error: createError.message });
+        const msg = (createError.message || '').toLowerCase();
+        if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+          const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000
+          });
+          if (listError) {
+            return res.status(400).json({ error: `User exists but could not fetch auth user: ${listError.message}` });
+          }
+          const existing = (usersData?.users || []).find(u => (u.email || '').toLowerCase() === tenantRow.email.toLowerCase());
+          if (!existing) {
+            return res.status(400).json({ error: 'User already registered, but not found in listUsers' });
+          }
+          authUserId = existing.id;
+          await supabaseAdmin.auth.admin.updateUserById(authUserId, { password: finalPassword });
+        } else {
+          return res.status(400).json({ error: createError.message });
+        }
+      } else {
+        authUserId = created.user?.id;
       }
-      authUserId = created.user?.id;
     } else if (password) {
       await supabaseAdmin.auth.admin.updateUserById(authUserId, { password: finalPassword });
     }
