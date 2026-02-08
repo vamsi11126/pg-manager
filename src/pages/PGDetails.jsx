@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const PGDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { pgs, updatePg, deletePg, deleteTenant, tenants, addTenant } = useData();
+    const { pgs, updatePg, deletePg, deleteTenant, tenants, addTenant, updateTenant, createTenantLogin } = useData();
     const pg = pgs.find(p => p.id === id);
 
     const [activeTab, setActiveTab] = useState('rooms');
@@ -20,6 +20,10 @@ const PGDetails = () => {
     const [showAddTenant, setShowAddTenant] = useState(false);
     const [aadharError, setAadharError] = useState('');
     const [phoneError, setPhoneError] = useState('');
+    const [showEditTenant, setShowEditTenant] = useState(null);
+    const [editTenant, setEditTenant] = useState(null);
+    const [editAadharError, setEditAadharError] = useState('');
+    const [editPhoneError, setEditPhoneError] = useState('');
     const roomPhotosInputRef = useRef(null);
 
     const [newTenant, setNewTenant] = useState({
@@ -233,6 +237,46 @@ const PGDetails = () => {
         if (e.key === '-' || e.key === 'e' || e.key === '+') {
             e.preventDefault();
         }
+    };
+
+    const formatYesNo = (val) => (val ? 'Yes' : 'No');
+
+    const buildTenantChanges = (before, after, passwordChanged) => {
+        const fields = [
+            { key: 'name', label: 'Name' },
+            { key: 'phone', label: 'Phone' },
+            { key: 'email', label: 'Email' },
+            { key: 'profession', label: 'Profession' },
+            { key: 'aadhar', label: 'Aadhar' },
+            { key: 'roomNumber', label: 'Room' },
+            { key: 'rent', label: 'Rent', format: (v) => `₹${v}` },
+            { key: 'advance', label: 'Advance', format: (v) => `₹${v}` },
+            { key: 'withFood', label: 'Food Included', format: formatYesNo },
+            { key: 'joiningDate', label: 'Joining Date' }
+        ];
+
+        const changes = [];
+        fields.forEach(({ key, label, format }) => {
+            const beforeVal = before?.[key];
+            const afterVal = after?.[key];
+            const a = format ? format(afterVal) : (afterVal ?? '');
+            const b = format ? format(beforeVal) : (beforeVal ?? '');
+            if (a !== b) {
+                changes.push({ field: label, from: b || '-', to: a || '-' });
+            }
+        });
+        if (passwordChanged) {
+            changes.push({ field: 'Password', from: '********', to: 'Updated' });
+        }
+        return changes;
+    };
+
+    const getRoomsForEditTenant = (currentRoom) => {
+        const options = getVacantRoomsForTenant();
+        if (currentRoom && !options.find(r => r.number === currentRoom)) {
+            options.unshift({ number: currentRoom, type: 'Current', category: {} });
+        }
+        return options;
     };
 
     const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
@@ -460,6 +504,45 @@ const PGDetails = () => {
             withFood: true,
             joiningDate: new Date().toISOString().split('T')[0]
         });
+    };
+
+    const handleEditTenantSubmit = (e) => {
+        e.preventDefault();
+        if (!editTenant) return;
+
+        let hasError = false;
+        if (editTenant.phone.length !== 10) {
+            setEditPhoneError('Phone number must be exactly 10 digits');
+            hasError = true;
+        } else {
+            setEditPhoneError('');
+        }
+
+        if (editTenant.aadhar.length !== 12) {
+            setEditAadharError('Aadhar number must be exactly 12 digits');
+            hasError = true;
+        } else {
+            setEditAadharError('');
+        }
+
+        if (hasError) return;
+
+        const updates = {
+            ...editTenant,
+            rent: Number(editTenant.rent),
+            advance: Number(editTenant.advance)
+        };
+
+        const passwordChanged = Boolean(editTenant.newPassword && editTenant.newPassword.trim());
+        const changeSummary = buildTenantChanges(showEditTenant, updates, passwordChanged);
+
+        updateTenant(editTenant.id, {
+            ...updates,
+            newPassword: passwordChanged ? editTenant.newPassword.trim() : undefined,
+            changeSummary
+        });
+        setShowEditTenant(null);
+        setEditTenant(null);
     };
 
     const getVacantRoomsForTenant = () => {
@@ -794,6 +877,18 @@ const PGDetails = () => {
                                                 <td style={{ padding: '1.25rem' }}>
                                                     <button
                                                         onClick={() => {
+                                                            setShowEditTenant(tenant);
+                                                            setEditTenant({ ...tenant, newPassword: '' });
+                                                            setEditAadharError('');
+                                                            setEditPhoneError('');
+                                                        }}
+                                                        className="btn btn-outline"
+                                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', marginRight: '0.5rem' }}
+                                                    >
+                                                        <Edit2 size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
                                                             if (window.confirm('Are you sure you want to delete this tenant?')) {
                                                                 deleteTenant(tenant.id);
                                                             }
@@ -802,6 +897,22 @@ const PGDetails = () => {
                                                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
                                                     >
                                                         <Trash2 size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                if (window.confirm('Create tenant login and send welcome email?')) {
+                                                                    await createTenantLogin(tenant.id);
+                                                                    alert('Tenant login created and email sent.');
+                                                                }
+                                                            } catch (err) {
+                                                                alert(err.message || 'Failed to create tenant login');
+                                                            }
+                                                        }}
+                                                        className="btn btn-outline"
+                                                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', marginLeft: '0.5rem' }}
+                                                    >
+                                                        Create Login
                                                     </button>
                                                 </td>
                                             </tr>
@@ -1884,6 +1995,158 @@ const PGDetails = () => {
             }
 
             {/* Add Tenant Modal */}
+            {showEditTenant && editTenant && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000, padding: '1rem'
+                }}>
+                    <div className="glass-card" style={{ width: '100%', maxWidth: '700px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2>Edit Tenant</h2>
+                            <button onClick={() => { setShowEditTenant(null); setEditTenant(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditTenantSubmit}>
+                            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name *</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={editTenant.name}
+                                        onChange={(e) => setEditTenant({ ...editTenant, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number *</label>
+                                    <input
+                                        type="tel"
+                                        className="input-field"
+                                        value={editTenant.phone}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                            setEditTenant({ ...editTenant, phone: val });
+                                            if (val.length === 10) setEditPhoneError('');
+                                        }}
+                                        required
+                                    />
+                                    {editPhoneError && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editPhoneError}</p>}
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email *</label>
+                                    <input
+                                        type="email"
+                                        className="input-field"
+                                        value={editTenant.email}
+                                        onChange={(e) => setEditTenant({ ...editTenant, email: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession *</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={editTenant.profession || ''}
+                                        onChange={(e) => setEditTenant({ ...editTenant, profession: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number *</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={editTenant.aadhar}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                                            setEditTenant({ ...editTenant, aadhar: val });
+                                            if (val.length === 12) setEditAadharError('');
+                                        }}
+                                        required
+                                    />
+                                    {editAadharError && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editAadharError}</p>}
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Number *</label>
+                                    <select
+                                        className="input-field"
+                                        value={editTenant.roomNumber}
+                                        onChange={(e) => setEditTenant({ ...editTenant, roomNumber: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Select Room</option>
+                                        {getRoomsForEditTenant(editTenant.roomNumber).map(room => (
+                                            <option key={room.number} value={room.number}>
+                                                Room {room.number}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹)</label>
+                                    <input
+                                        type="number"
+                                        className="input-field"
+                                        value={editTenant.rent}
+                                        onChange={(e) => setEditTenant({ ...editTenant, rent: e.target.value })}
+                                        onKeyDown={handleNumberInput}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Advance Amount (₹)</label>
+                                    <input
+                                        type="number"
+                                        className="input-field"
+                                        value={editTenant.advance}
+                                        onChange={(e) => setEditTenant({ ...editTenant, advance: e.target.value })}
+                                        onKeyDown={handleNumberInput}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Joining Date *</label>
+                                    <input
+                                        type="date"
+                                        className="input-field"
+                                        value={editTenant.joiningDate}
+                                        onChange={(e) => setEditTenant({ ...editTenant, joiningDate: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', height: '100%', paddingTop: '1.5rem' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={editTenant.withFood}
+                                            onChange={(e) => setEditTenant({ ...editTenant, withFood: e.target.checked })}
+                                        /> Include Food
+                                    </label>
+                                </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>New Password (optional)</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        placeholder="Leave blank to keep current password"
+                                        value={editTenant.newPassword || ''}
+                                        onChange={(e) => setEditTenant({ ...editTenant, newPassword: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                                <button type="button" onClick={() => { setShowEditTenant(null); setEditTenant(null); }} className="btn btn-outline">Cancel</button>
+                                <button type="submit" className="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {showAddTenant && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,

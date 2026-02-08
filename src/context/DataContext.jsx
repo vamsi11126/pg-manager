@@ -409,11 +409,30 @@ export const DataProvider = ({ children }) => {
         } else {
             setTenants([transformTenantFromDB(data), ...tenants]);
             alert('Tenant registered successfully!');
+            const { data: pgData } = await supabase
+                .from('pgs')
+                .select('id,name,address,food_amount')
+                .eq('id', tenantData.pgId)
+                .single();
+            await fetch(import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'welcome',
+                    tenant: {
+                        ...tenantData,
+                        id: data.id
+                    },
+                    pg: pgData ? { name: pgData.name, address: pgData.address, foodAmount: pgData.food_amount } : null,
+                    defaultPassword: 'Tenant@1234'
+                })
+            });
         }
     };
 
     // Update Tenant
     const updateTenant = async (tenantId, updates) => {
+        const { newPassword, changeSummary } = updates || {};
         const dbUpdates = transformTenantToDB(updates);
 
         const { data, error } = await supabase
@@ -429,7 +448,36 @@ export const DataProvider = ({ children }) => {
         } else {
             setTenants(tenants.map(t => t.id === tenantId ? transformTenantFromDB(data) : t));
             alert('Tenant updated successfully!');
+            const { data: pgData } = await supabase
+                .from('pgs')
+                .select('id,name,address,food_amount')
+                .eq('id', data.pgId)
+                .single();
+            await fetch(import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update',
+                    tenant: transformTenantFromDB(data),
+                    pg: pgData ? { name: pgData.name, address: pgData.address, foodAmount: pgData.food_amount } : null,
+                    newPassword,
+                    changes: Array.isArray(changeSummary) ? changeSummary : []
+                })
+            });
         }
+    };
+
+    const createTenantLogin = async (tenantId, password) => {
+        const res = await fetch(import.meta.env.VITE_EMAIL_API_URL?.replace('/send-tenant-email', '/create-tenant-login') || 'http://localhost:4000/create-tenant-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenantId, password })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Failed to create tenant login');
+        }
+        return true;
     };
 
     // Delete Tenant
@@ -614,7 +662,8 @@ export const DataProvider = ({ children }) => {
             pgs, addPg, updatePg, deletePg,
             tenants, addTenant, updateTenant, deleteTenant,
             paymentRequests, addPaymentRequest, updatePaymentRequestStatus,
-            addTenantPaymentRequest, updateTenantPassword
+            addTenantPaymentRequest, updateTenantPassword,
+            createTenantLogin
         }}>
             {!loading && children}
         </DataContext.Provider>
