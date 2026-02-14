@@ -28,11 +28,12 @@ const ElectricitySection = ({
                     <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Rate per Unit (₹):</label>
                     <input
                         type="number"
-                        className="input-field"
+                        className="input-field tooltip-target"
                         style={{ width: '80px', margin: 0 }}
                         value={eBillRate}
                         onChange={(e) => setEBillRate(e.target.value)}
                         onBlur={handleUpdateEBillRate}
+                        data-tooltip="Set electricity cost per unit. Updates when you leave this field."
                     />
                 </div>
             </div>
@@ -96,9 +97,10 @@ const ElectricitySection = ({
                                                     style={{ marginBottom: 0 }}
                                                 />
                                                 <button
-                                                    className="btn btn-primary"
+                                                    className="btn btn-primary tooltip-target"
                                                     style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
                                                     onClick={() => handleInitializeMeter(roomNum, initialInput)}
+                                                    data-tooltip="Save initial meter reading for this room"
                                                 >
                                                     Initialize
                                                 </button>
@@ -118,9 +120,10 @@ const ElectricitySection = ({
                                                         style={{ marginBottom: 0 }}
                                                     />
                                                     <button
-                                                        className="btn btn-primary"
+                                                        className="btn btn-primary tooltip-target"
                                                         disabled={!currentInput}
                                                         onClick={() => handleGenerateBill(roomNum)}
+                                                        data-tooltip="Generate this month's electricity bill using current reading"
                                                     >
                                                         Generate Bill
                                                     </button>

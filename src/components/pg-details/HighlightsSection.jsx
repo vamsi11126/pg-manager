@@ -57,12 +57,15 @@ const HighlightsSection = ({ pg, updatePg }) => {
     };
 
     const handleSave = () => {
-        updatePg({
-            ...pg,
-            facilities,
-            neighborhoodDetails,
-            galleryPhotos
-        });
+        updatePg(
+            {
+                ...pg,
+                facilities,
+                neighborhoodDetails,
+                galleryPhotos
+            },
+            { successMessage: 'Highlights section updated successfully.' }
+        );
     };
 
     return (

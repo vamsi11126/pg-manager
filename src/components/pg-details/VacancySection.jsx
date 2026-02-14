@@ -14,7 +14,7 @@ const VacancySection = ({ getVacantRooms }) => {
                 rooms.map(room => (
                     <div
                         key={room.number}
-                        className="glass-card"
+                        className="glass-card tooltip-target"
                         style={{
                             padding: '1.5rem',
                             textAlign: 'center',
@@ -22,6 +22,7 @@ const VacancySection = ({ getVacantRooms }) => {
                             transition: 'all 0.2s ease',
                             position: 'relative'
                         }}
+                        data-tooltip={`Room ${room.number} has ${room.slotsLeft} of ${room.capacity} slots available`}
                     >
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Room no: {room.number}</div>
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{room.type}</div>

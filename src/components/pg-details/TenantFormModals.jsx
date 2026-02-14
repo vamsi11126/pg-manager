@@ -32,7 +32,7 @@ export const EditTenantModal = ({
                 <form onSubmit={handleEditTenantSubmit}>
                     <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="text"
                                 className="input-field"
@@ -42,7 +42,7 @@ export const EditTenantModal = ({
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="tel"
                                 className="input-field"
@@ -57,7 +57,7 @@ export const EditTenantModal = ({
                             {editPhoneError && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editPhoneError}</p>}
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="email"
                                 className="input-field"
@@ -67,7 +67,7 @@ export const EditTenantModal = ({
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="text"
                                 className="input-field"
@@ -77,7 +77,7 @@ export const EditTenantModal = ({
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="text"
                                 className="input-field"
@@ -92,7 +92,7 @@ export const EditTenantModal = ({
                             {editAadharError && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editAadharError}</p>}
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Number *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Number <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <select
                                 className="input-field"
                                 value={editTenant.roomNumber}
@@ -108,7 +108,7 @@ export const EditTenantModal = ({
                             </select>
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹)</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="number"
                                 className="input-field"
@@ -119,7 +119,7 @@ export const EditTenantModal = ({
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Advance Amount (₹)</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Advance Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="number"
                                 className="input-field"
@@ -130,7 +130,7 @@ export const EditTenantModal = ({
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Joining Date *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Joining Date <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="date"
                                 className="input-field"
@@ -200,7 +200,7 @@ export const AddTenantModal = ({
                 <form onSubmit={handleAddTenant}>
                     <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="text"
                                 className="input-field"
@@ -211,7 +211,7 @@ export const AddTenantModal = ({
                             />
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="tel"
                                 className="input-field"
@@ -227,7 +227,7 @@ export const AddTenantModal = ({
                             {phoneError && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{phoneError}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="email"
                                 className="input-field"
@@ -238,7 +238,7 @@ export const AddTenantModal = ({
                             />
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="text"
                                 className="input-field"
@@ -249,7 +249,7 @@ export const AddTenantModal = ({
                             />
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="text"
                                 className="input-field"
@@ -265,7 +265,7 @@ export const AddTenantModal = ({
                             {aadharError && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{aadharError}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Number *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Number <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <select
                                 className="input-field"
                                 value={newTenant.roomNumber}
@@ -291,7 +291,7 @@ export const AddTenantModal = ({
                             </select>
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹)</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="number"
                                 className="input-field"
@@ -302,7 +302,7 @@ export const AddTenantModal = ({
                             />
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Advance Amount (₹)</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Advance Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="number"
                                 className="input-field"
@@ -313,7 +313,7 @@ export const AddTenantModal = ({
                             />
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Joining Date *</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Joining Date <span style={{ color: 'var(--danger)' }}>*</span></label>
                             <input
                                 type="date"
                                 className="input-field"
@@ -342,4 +342,3 @@ export const AddTenantModal = ({
         </div>
     );
 };
-

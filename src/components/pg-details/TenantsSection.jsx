@@ -1,5 +1,6 @@
 import React from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 const TenantsSection = ({
     pg,
@@ -11,6 +12,8 @@ const TenantsSection = ({
     setEditAadharError,
     setEditPhoneError
 }) => {
+    const { success, error: showError } = useToast();
+
     return (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
             <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border-glass)' }}>
@@ -87,35 +90,34 @@ const TenantsSection = ({
                                                     setEditAadharError('');
                                                     setEditPhoneError('');
                                                 }}
-                                                className="btn btn-outline"
+                                                className="btn btn-outline tooltip-target"
                                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', marginRight: '0.5rem' }}
+                                                data-tooltip="Edit tenant details"
                                             >
                                                 <Edit2 size={14} />
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    if (window.confirm('Are you sure you want to delete this tenant?')) {
-                                                        deleteTenant(tenant.id);
-                                                    }
+                                                    deleteTenant(tenant.id);
                                                 }}
-                                                className="btn btn-outline"
+                                                className="btn btn-outline tooltip-target"
                                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                                                data-tooltip="Delete tenant"
                                             >
                                                 <Trash2 size={14} />
                                             </button>
                                             <button
                                                 onClick={async () => {
                                                     try {
-                                                        if (window.confirm('Create tenant login and send welcome email?')) {
-                                                            await createTenantLogin(tenant.id);
-                                                            alert('Tenant login created and email sent.');
-                                                        }
+                                                        await createTenantLogin(tenant.id);
+                                                        success(`Login created and welcome email sent to ${tenant.name}.`);
                                                     } catch (err) {
-                                                        alert(err.message || 'Failed to create tenant login');
+                                                        showError(err.message || 'Could not create tenant login.');
                                                     }
                                                 }}
-                                                className="btn btn-outline"
+                                                className="btn btn-outline tooltip-target"
                                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', marginLeft: '0.5rem' }}
+                                                data-tooltip="Create login and send welcome email"
                                             >
                                                 Create Login
                                             </button>

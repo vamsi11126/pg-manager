@@ -29,7 +29,7 @@ const WifiModals = ({
                         </div>
                         <form onSubmit={handleAddWifi}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Name</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Name <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -39,7 +39,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Username</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Username <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -49,7 +49,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -59,7 +59,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Amount (₹)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="number"
                                     className="input-field"
@@ -72,7 +72,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Due Date</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Due Date <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="date"
                                     className="input-field"
@@ -109,7 +109,7 @@ const WifiModals = ({
                             handleEditWifi(showEditWifi);
                         }}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Name</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Name <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -119,7 +119,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Username</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Username <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -129,7 +129,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -139,7 +139,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Amount (₹)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="number"
                                     className="input-field"
@@ -152,7 +152,7 @@ const WifiModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Due Date</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Due Date <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="date"
                                     className="input-field"

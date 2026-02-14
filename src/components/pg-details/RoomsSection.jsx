@@ -26,7 +26,7 @@ const RoomsSection = ({ pg, tenants, setShowAddRoom, setShowEditRoom, handleDele
                         <span>Please add room categories before registering tenants</span>
                     </div>
                     <br />
-                    <button onClick={() => setShowAddRoom(true)} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
+                    <button onClick={() => setShowAddRoom(true)} className="btn btn-primary tooltip-target" style={{ marginTop: '0.5rem' }} data-tooltip="Create your first room category with room numbers and pricing">
                         <Plus size={20} /> Add Your First Category
                     </button>
                 </div>
@@ -61,7 +61,7 @@ const RoomsSection = ({ pg, tenants, setShowAddRoom, setShowEditRoom, handleDele
                                     const slotsLeft = capacity - roomTenants.length;
 
                                     return (
-                                        <div key={num} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <div key={num} className="glass-card tooltip-target" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} data-tooltip={`Room ${num}: ${category.type}, ₹${category.price} monthly`}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
                                                     <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Room no: {num}</h3>
@@ -113,10 +113,10 @@ const RoomsSection = ({ pg, tenants, setShowAddRoom, setShowEditRoom, handleDele
                                                     ))}
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button onClick={() => setShowEditRoom(category)} className="btn btn-outline" style={{ padding: '0.4rem', border: 'none' }}>
+                                                    <button onClick={() => setShowEditRoom(category)} className="btn btn-outline tooltip-target" style={{ padding: '0.4rem', border: 'none' }} data-tooltip="Edit this room category details">
                                                         <Edit2 size={14} />
                                                     </button>
-                                                    <button onClick={() => handleDeleteRoomCategory(category.id)} className="btn btn-outline" style={{ padding: '0.4rem', border: 'none', color: 'var(--danger)' }}>
+                                                    <button onClick={() => handleDeleteRoomCategory(category.id)} className="btn btn-outline tooltip-target" style={{ padding: '0.4rem', border: 'none', color: 'var(--danger)' }} data-tooltip="Delete this room category and linked room assignments">
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>

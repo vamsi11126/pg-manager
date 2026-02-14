@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
+import { useToast } from './ToastContext';
 
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
+    const { success, error: showError, info } = useToast();
     const [user, setUser] = useState(null);
     const [authRole, setAuthRole] = useState(null);
     const [tenantUser, setTenantUser] = useState(null);
@@ -26,6 +28,7 @@ export const DataProvider = ({ children }) => {
         electricityData: dbPg.electricity_data ?? {},
         eBillRate: dbPg.e_bill_rate ?? 10,
         foodAmount: dbPg.food_amount ?? 0,
+        mapLink: dbPg.map_link ?? '',
         facilities: dbPg.facilities ?? [],
         neighborhoodDetails: dbPg.neighborhood_details ?? '',
         galleryPhotos: dbPg.gallery_photos ?? [],
@@ -43,6 +46,7 @@ export const DataProvider = ({ children }) => {
         electricity_data: pg.electricityData ?? pg.electricity_data ?? {},
         e_bill_rate: pg.eBillRate ?? pg.e_bill_rate ?? 10,
         food_amount: pg.foodAmount ?? pg.food_amount ?? 0,
+        map_link: pg.mapLink ?? pg.map_link ?? '',
         facilities: pg.facilities ?? [],
         neighborhood_details: pg.neighborhoodDetails ?? pg.neighborhood_details ?? '',
         gallery_photos: pg.galleryPhotos ?? pg.gallery_photos ?? []
@@ -299,7 +303,7 @@ export const DataProvider = ({ children }) => {
 
     const addPg = async (pgData) => {
         if (!user) {
-            alert('User not authenticated');
+            showError('Please login to continue.');
             return;
         }
 
@@ -318,15 +322,19 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error adding PG:', error);
-            alert(`Failed to add PG: ${error.message}\nDetails: ${error.details || 'No additional details'}\nHint: ${error.hint || 'Check RLS policies and schema'}`);
+            showError(`Could not create property. ${error.message}`);
         } else {
             console.log('PG added successfully:', data);
             setPgs([...pgs, transformPgFromDB(data)]);
-            alert('PG added successfully!');
+            success('New property created successfully.');
         }
     };
 
-    const updatePg = async (updatedPg) => {
+    const updatePg = async (updatedPg, toastOptions = {}) => {
+        const successMessage = toastOptions?.successMessage || 'Changes saved successfully.';
+        const errorMessage = toastOptions?.errorMessage || null;
+        const silentSuccess = toastOptions?.silentSuccess === true;
+
         const { data, error } = await supabase
             .from('pgs')
             .update(transformPgToDB(updatedPg))
@@ -336,10 +344,13 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error updating PG:', error);
-            alert('Failed to update PG: ' + error.message);
+            showError(errorMessage || ('Could not save changes. ' + error.message));
         } else {
             const next = transformPgFromDB(data);
             setPgs(pgs.map(pg => pg.id === updatedPg.id ? next : pg));
+            if (!silentSuccess) {
+                success(successMessage);
+            }
         }
     };
 
@@ -351,9 +362,10 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error deleting PG:', error);
-            alert('Failed to delete PG');
+            showError('Could not delete this property.');
         } else {
             setPgs(pgs.filter(pg => pg.id !== pgId));
+            info('Property deleted successfully.');
         }
     };
 
@@ -438,10 +450,10 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error adding tenant:', error);
-            alert('Failed to add tenant: ' + error.message);
+            showError('Could not register tenant. ' + error.message);
         } else {
             setTenants([transformTenantFromDB(data), ...tenants]);
-            alert('Tenant registered successfully!');
+            success('Tenant registered successfully.');
             const { data: pgData } = await supabase
                 .from('pgs')
                 .select('id,name,address,food_amount')
@@ -477,10 +489,10 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error updating tenant:', error);
-            alert('Failed to update tenant: ' + error.message);
+            showError('Could not update tenant details. ' + error.message);
         } else {
             setTenants(tenants.map(t => t.id === tenantId ? transformTenantFromDB(data) : t));
-            alert('Tenant updated successfully!');
+            success('Tenant details updated successfully.');
             const { data: pgData } = await supabase
                 .from('pgs')
                 .select('id,name,address,food_amount')
@@ -522,9 +534,10 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error deleting tenant:', error);
-            alert('Failed to delete tenant: ' + error.message);
+            showError('Could not delete tenant. ' + error.message);
         } else {
             setTenants(tenants.filter(t => t.id !== tenantId));
+            info('Tenant deleted successfully.');
         }
     };
 
@@ -565,10 +578,10 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error creating payment request:', error);
-            alert('Failed to create payment request: ' + error.message);
+            showError('Could not create payment request. ' + error.message);
         } else {
             setPaymentRequests([transformPaymentFromDB(data), ...paymentRequests]);
-            alert('Payment request created successfully!');
+            success('Payment request created successfully.');
         }
     };
 
@@ -584,10 +597,10 @@ export const DataProvider = ({ children }) => {
 
         if (error) {
             console.error('Error updating payment request:', error);
-            alert('Failed to update payment request: ' + error.message);
+            showError('Could not update payment request. ' + error.message);
         } else {
             setPaymentRequests(paymentRequests.map(pr => pr.id === requestId ? transformPaymentFromDB(data) : pr));
-            alert(`Payment request ${newStatus.toLowerCase()} successfully!`);
+            success(`Payment request marked as ${newStatus.toLowerCase()}.`);
         }
     };
 

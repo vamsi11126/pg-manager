@@ -9,7 +9,7 @@ const WifiSection = ({ pg, setShowAddWifi, setShowEditWifi, handleDeleteWifi }) 
                     <h2 style={{ margin: 0 }}>WiFi Management</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Manage internet access details per floor</p>
                 </div>
-                <button onClick={() => setShowAddWifi(true)} className="btn btn-primary">
+                <button onClick={() => setShowAddWifi(true)} className="btn btn-primary tooltip-target" data-tooltip="Add WiFi credentials, amount, and due date for a floor">
                     <Plus size={18} /> Add WiFi Details
                 </button>
             </div>
@@ -30,17 +30,17 @@ const WifiSection = ({ pg, setShowAddWifi, setShowEditWifi, handleDeleteWifi }) 
                         })();
 
                         return (
-                            <div key={wifi.id} className="glass-card" style={{ padding: '1.5rem', position: 'relative' }}>
+                            <div key={wifi.id} className="glass-card tooltip-target" style={{ padding: '1.5rem', position: 'relative' }} data-tooltip={`WiFi details for ${wifi.floorName}`}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <div>
                                         <h4 style={{ margin: 0 }}>{wifi.floorName}</h4>
                                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>WiFi Details</p>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button onClick={() => setShowEditWifi(wifi)} className="btn btn-outline" style={{ padding: '0.4rem' }}>
+                                        <button onClick={() => setShowEditWifi(wifi)} className="btn btn-outline tooltip-target" style={{ padding: '0.4rem' }} data-tooltip="Edit these WiFi details">
                                             <Edit2 size={14} />
                                         </button>
-                                        <button onClick={() => handleDeleteWifi(wifi.id)} className="btn btn-outline" style={{ padding: '0.4rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}>
+                                        <button onClick={() => handleDeleteWifi(wifi.id)} className="btn btn-outline tooltip-target" style={{ padding: '0.4rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} data-tooltip="Delete these WiFi details">
                                             <Trash2 size={14} />
                                         </button>
                                     </div>

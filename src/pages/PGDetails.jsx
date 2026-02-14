@@ -54,17 +54,19 @@ const PGDetails = () => {
 
     const [editPgData, setEditPgData] = useState({
         name: pg?.name || '',
-        address: pg?.address || ''
+        address: pg?.address || '',
+        mapLink: pg?.mapLink || ''
     });
 
     useEffect(() => {
         if (pg) {
             setEditPgData({
                 name: pg.name || '',
-                address: pg.address || ''
+                address: pg.address || '',
+                mapLink: pg.mapLink || ''
             });
         }
-    }, [pg?.id, pg?.name, pg?.address]);
+    }, [pg?.id, pg?.name, pg?.address, pg?.mapLink]);
 
     const [newRoom, setNewRoom] = useState({
         type: '1 sharing',
@@ -90,7 +92,10 @@ const PGDetails = () => {
     const [readings, setReadings] = useState({}); // { roomNumber: { current: '', error: '' } }
 
     const handleUpdateEBillRate = () => {
-        updatePg({ ...pg, eBillRate: parseFloat(eBillRate) });
+        updatePg(
+            { ...pg, eBillRate: parseFloat(eBillRate) },
+            { successMessage: 'Electricity rate updated successfully.' }
+        );
     };
 
     const handleInitializeMeter = (roomNum, initialReading) => {
@@ -103,7 +108,10 @@ const PGDetails = () => {
                 history: []
             }
         };
-        updatePg({ ...pg, electricityData: updatedElectricityData });
+        updatePg(
+            { ...pg, electricityData: updatedElectricityData },
+            { successMessage: `Meter reading initialized for Room ${roomNum}.` }
+        );
         setReadings(prev => ({ ...prev, [roomNum]: { ...prev[roomNum], initial: '' } }));
     };
 
@@ -146,10 +154,6 @@ const PGDetails = () => {
             return;
         }
 
-        if (!window.confirm("⚠️ WARNING: Please verify the meter readings carefully.\n\nOnce generated, this bill CANNOT be edited or deleted.\n\nAre you sure you want to generate the bill now?")) {
-            return;
-        }
-
         const unitsConsumed = currentReading - previousReading;
         const billAmount = unitsConsumed * eBillRate;
         const roomTenantsCount = tenants.filter(t => t.pgId === pg.id && t.roomNumber === roomNum).length;
@@ -171,7 +175,10 @@ const PGDetails = () => {
             }
         };
 
-        updatePg({ ...pg, electricityData: updatedElectricityData });
+        updatePg(
+            { ...pg, electricityData: updatedElectricityData },
+            { successMessage: `Electricity bill generated for Room ${roomNum}.` }
+        );
         setReadings(prev => ({
             ...prev,
             [roomNum]: { current: '', error: '' }
@@ -361,7 +368,7 @@ const PGDetails = () => {
             ...pg,
             rooms: [...(pg.rooms || []), { ...newRoom, roomNumbers: rooms, id: Date.now().toString() }]
         };
-        updatePg(updatedPg);
+        updatePg(updatedPg, { successMessage: 'New room category added successfully.' });
         setShowAddRoom(false);
         setNewRoom({
             type: '1 sharing',
@@ -382,7 +389,10 @@ const PGDetails = () => {
     };
 
     const saveFoodMenu = () => {
-        updatePg({ ...pg, foodMenu, foodAmount: foodAmountDraft });
+        updatePg(
+            { ...pg, foodMenu, foodAmount: foodAmountDraft },
+            { successMessage: 'Food menu and amount updated.' }
+        );
         setShowEditFood(false);
     };
 
@@ -392,7 +402,7 @@ const PGDetails = () => {
             ...pg,
             wifiDetails: [...(pg.wifiDetails || []), { ...newWifi, id: Date.now().toString() }]
         };
-        updatePg(updatedPg);
+        updatePg(updatedPg, { successMessage: 'WiFi details added successfully.' });
         setShowAddWifi(false);
         setNewWifi({
             floorName: 'Ground Floor',
@@ -404,13 +414,11 @@ const PGDetails = () => {
     };
 
     const handleDeleteWifi = (wifiId) => {
-        if (window.confirm('Are you sure you want to delete these WiFi details?')) {
-            const updatedPg = {
-                ...pg,
-                wifiDetails: pg.wifiDetails.filter(w => w.id !== wifiId)
-            };
-            updatePg(updatedPg);
-        }
+        const updatedPg = {
+            ...pg,
+            wifiDetails: pg.wifiDetails.filter(w => w.id !== wifiId)
+        };
+        updatePg(updatedPg, { successMessage: 'WiFi details deleted successfully.' });
     };
 
     const handleEditWifi = (wifiToUpdate) => {
@@ -418,7 +426,7 @@ const PGDetails = () => {
             ...pg,
             wifiDetails: pg.wifiDetails.map(w => w.id === wifiToUpdate.id ? wifiToUpdate : w)
         };
-        updatePg(updatedPg);
+        updatePg(updatedPg, { successMessage: 'WiFi details updated successfully.' });
         setShowEditWifi(null);
     };
 
@@ -444,35 +452,31 @@ const PGDetails = () => {
     };
 
     const handleDeletePg = () => {
-        if (window.confirm('Are you sure you want to delete this PG? All associated tenants and data will be permanently removed.')) {
-            deletePg(pg.id);
-            navigate('/');
-        }
+        deletePg(pg.id);
+        navigate('/');
     };
 
     const handleEditPg = (e) => {
         e.preventDefault();
-        updatePg({ ...pg, ...editPgData });
+        updatePg({ ...pg, ...editPgData }, { successMessage: 'Property details updated successfully.' });
         setShowEditPg(false);
     };
 
     const handleDeleteRoomCategory = (categoryId) => {
-        if (window.confirm('Are you sure you want to delete this room category? This will also remove all tenants assigned to these rooms.')) {
-            // Find tenants in this category
-            const category = pg.rooms.find(c => c.id === categoryId);
-            if (category && category.roomNumbers) {
-                category.roomNumbers.forEach(roomNum => {
-                    const tenantsInRoom = tenants.filter(t => t.pgId === pg.id && t.roomNumber === roomNum);
-                    tenantsInRoom.forEach(t => deleteTenant(t.id));
-                });
-            }
-
-            const updatedPg = {
-                ...pg,
-                rooms: pg.rooms.filter(cat => cat.id !== categoryId)
-            };
-            updatePg(updatedPg);
+        // Find tenants in this category
+        const category = pg.rooms.find(c => c.id === categoryId);
+        if (category && category.roomNumbers) {
+            category.roomNumbers.forEach(roomNum => {
+                const tenantsInRoom = tenants.filter(t => t.pgId === pg.id && t.roomNumber === roomNum);
+                tenantsInRoom.forEach(t => deleteTenant(t.id));
+            });
         }
+
+        const updatedPg = {
+            ...pg,
+            rooms: pg.rooms.filter(cat => cat.id !== categoryId)
+        };
+        updatePg(updatedPg, { successMessage: 'Room category deleted successfully.' });
     };
 
     const handleAddTenant = (e) => {

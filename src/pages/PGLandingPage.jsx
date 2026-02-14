@@ -26,6 +26,7 @@ const normalizePg = (dbPg) => ({
     electricityData: dbPg.electricity_data ?? {},
     eBillRate: dbPg.e_bill_rate ?? 10,
     foodAmount: dbPg.food_amount ?? 0,
+    mapLink: dbPg.map_link ?? '',
     facilities: dbPg.facilities ?? [],
     neighborhoodDetails: dbPg.neighborhood_details ?? '',
     galleryPhotos: dbPg.gallery_photos ?? []
@@ -304,6 +305,17 @@ const PGLandingPage = () => {
                                 {pg.neighborhoodDetails || 'Neighborhood highlights will be shared shortly.'}
                             </p>
                             <p style={{ marginTop: '1rem', fontWeight: 600 }}>Easy access to daily essentials.</p>
+                            {pg.mapLink && (
+                                <a
+                                    href={pg.mapLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="lp-btn lp-btn-ghost"
+                                    style={{ marginTop: '0.75rem', display: 'inline-flex' }}
+                                >
+                                    Open Map Location
+                                </a>
+                            )}
                         </div>
                         <div className="lp-map">
                             <h3>Neighborhood Snapshot</h3>

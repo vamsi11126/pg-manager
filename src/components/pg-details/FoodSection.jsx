@@ -33,11 +33,11 @@ const FoodSection = ({ pg, setShowEditFood }) => {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem'
-                    }}>
+                    }} className="tooltip-target" data-tooltip="Current monthly food charge per tenant">
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Monthly Cost:</span>
                         <span style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '1.1rem' }}>₹{pg.foodAmount || 0}</span>
                     </div>
-                    <button onClick={() => setShowEditFood(true)} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+                    <button onClick={() => setShowEditFood(true)} className="btn btn-primary tooltip-target" style={{ fontSize: '0.875rem' }} data-tooltip="Edit weekly menu and monthly food amount">
                         <Edit2 size={16} /> Edit Menu
                     </button>
                 </div>

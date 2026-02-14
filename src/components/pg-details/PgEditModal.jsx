@@ -19,7 +19,9 @@ const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, han
                 </div>
                 <form onSubmit={handleEditPg}>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>PG Name</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                            PG Name <span style={{ color: 'var(--danger)' }}>*</span>
+                        </label>
                         <input
                             type="text"
                             className="input-field"
@@ -29,13 +31,25 @@ const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, han
                         />
                     </div>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Address</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                            Address <span style={{ color: 'var(--danger)' }}>*</span>
+                        </label>
                         <textarea
                             className="input-field"
                             style={{ height: '100px', resize: 'none' }}
                             value={editPgData.address}
                             onChange={(e) => setEditPgData({ ...editPgData, address: e.target.value })}
                             required
+                        />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>PG Map Link (Optional)</label>
+                        <input
+                            type="url"
+                            className="input-field"
+                            placeholder="https://maps.google.com/..."
+                            value={editPgData.mapLink || ''}
+                            onChange={(e) => setEditPgData({ ...editPgData, mapLink: e.target.value })}
                         />
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>

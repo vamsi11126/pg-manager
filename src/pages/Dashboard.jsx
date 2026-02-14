@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Plus, Building2, Users, IndianRupee, MapPin, Map, Camera, Utensils, Info } from 'lucide-react';
+import { Plus, Building2, Users, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 const Dashboard = () => {
     const { pgs, tenants, addPg } = useData();
+    const { error: showError } = useToast();
     const [showAddPg, setShowAddPg] = useState(false);
     const [newPg, setNewPg] = useState({
         name: '',
         address: '',
+        mapLink: '',
         rooms: [],
         foodMenu: [],
         facilities: [],
@@ -18,11 +21,16 @@ const Dashboard = () => {
 
     const handleAddPg = (e) => {
         e.preventDefault();
+        if (!newPg.name.trim() || !newPg.address.trim()) {
+            showError('PG name and address are required');
+            return;
+        }
         addPg(newPg);
         setShowAddPg(false);
         setNewPg({
             name: '',
             address: '',
+            mapLink: '',
             rooms: [],
             foodMenu: [],
             facilities: [],
@@ -38,7 +46,7 @@ const Dashboard = () => {
                     <h1 style={{ marginBottom: '0.25rem' }}>Property Overview</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Manage your buildings and check status</p>
                 </div>
-                <button onClick={() => setShowAddPg(true)} className="btn btn-primary">
+                <button onClick={() => setShowAddPg(true)} className="btn btn-primary tooltip-target" data-tooltip="Create a new PG property">
                     <Plus size={20} /> Add New PG
                 </button>
             </header>
@@ -87,11 +95,8 @@ const Dashboard = () => {
                 <div className="grid grid-cols-2">
                     {pgs.map(pg => (
                         <div key={pg.id} className="glass-card" style={{ padding: '1.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <div style={{ marginBottom: '1rem' }}>
                                 <h3 style={{ margin: 0 }}>{pg.name}</h3>
-                                <span className="btn-outline" style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem' }}>
-                                    Active
-                                </span>
                             </div>
                             <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
                                 <Map size={16} /> {pg.address}
@@ -109,13 +114,13 @@ const Dashboard = () => {
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                                <Link to={`/pg/${pg.id}`} className="btn btn-primary" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
+                                <Link to={`/pg/${pg.id}`} className="btn btn-primary tooltip-target" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }} data-tooltip="Open and manage PG details">
                                     Manage Details
                                 </Link>
-                                <Link to={`/tenants?pgId=${pg.id}`} className="btn btn-outline" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
+                                <Link to={`/tenants?pgId=${pg.id}`} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }} data-tooltip="Review payment requests and tenants">
                                     Pay Requests
                                 </Link>
-                                <Link to={`/pg/${pg.id}/landingpage`} className="btn btn-outline" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }}>
+                                <Link to={`/pg/${pg.id}/landingpage`} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }} data-tooltip="Preview the public landing page">
                                     Landing Page
                                 </Link>
                             </div>
@@ -135,7 +140,9 @@ const Dashboard = () => {
                         <h2>Add New Property</h2>
                         <form onSubmit={handleAddPg}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>PG Name</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                                    PG Name <span style={{ color: 'var(--danger)' }}>*</span>
+                                </label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -146,7 +153,9 @@ const Dashboard = () => {
                                 />
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Address</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                                    Address <span style={{ color: 'var(--danger)' }}>*</span>
+                                </label>
                                 <textarea
                                     className="input-field"
                                     style={{ minHeight: '100px', resize: 'none' }}
@@ -154,6 +163,16 @@ const Dashboard = () => {
                                     value={newPg.address}
                                     onChange={(e) => setNewPg({ ...newPg, address: e.target.value })}
                                     required
+                                />
+                            </div>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>PG Map Link (Optional)</label>
+                                <input
+                                    type="url"
+                                    className="input-field"
+                                    placeholder="https://maps.google.com/..."
+                                    value={newPg.mapLink}
+                                    onChange={(e) => setNewPg({ ...newPg, mapLink: e.target.value })}
                                 />
                             </div>
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>

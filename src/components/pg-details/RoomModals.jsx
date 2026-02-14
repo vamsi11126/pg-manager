@@ -39,7 +39,7 @@ const RoomModals = ({
                         </div>
                         <form onSubmit={handleAddRoom}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Sharing Type</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Sharing Type <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <select
                                     className="input-field"
                                     value={newRoom.type}
@@ -52,7 +52,7 @@ const RoomModals = ({
                                 </select>
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Price (₹)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Price (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="number"
                                     className="input-field"
@@ -65,7 +65,7 @@ const RoomModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Level</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Level <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <select
                                     className="input-field"
                                     value={newRoom.floorName}
@@ -91,7 +91,7 @@ const RoomModals = ({
                                 </select>
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Numbers (comma separated)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Numbers (comma separated) <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -218,25 +218,25 @@ const RoomModals = ({
                             const removedRooms = oldRooms.filter(r => !newRooms.includes(r));
 
                             if (removedRooms.length > 0) {
-                                if (window.confirm(`Removing rooms ${removedRooms.join(', ')} will also remove assigned tenants. Continue?`)) {
-                                    removedRooms.forEach(roomNum => {
-                                        const tenantsInRoom = tenants.filter(t => t.pgId === pg.id && t.roomNumber === roomNum);
-                                        tenantsInRoom.forEach(t => deleteTenant(t.id));
-                                    });
-                                } else {
-                                    return;
-                                }
+                                removedRooms.forEach(roomNum => {
+                                    const tenantsInRoom = tenants.filter(t => t.pgId === pg.id && t.roomNumber === roomNum);
+                                    tenantsInRoom.forEach(t => deleteTenant(t.id));
+                                });
                             }
 
                             const updatedPg = {
                                 ...pg,
                                 rooms: pg.rooms.map(r => r.id === showEditRoom.id ? { ...showEditRoom, roomNumbers: newRooms } : r)
                             };
-                            updatePg(updatedPg);
+                            updatePg(updatedPg, {
+                                successMessage: removedRooms.length > 0
+                                    ? `Room category updated. Rooms removed: ${removedRooms.join(', ')}.`
+                                    : 'Room category updated successfully.'
+                            });
                             setShowEditRoom(null);
                         }}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Sharing Type</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Sharing Type <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <select
                                     className="input-field"
                                     value={showEditRoom.type}
@@ -249,7 +249,7 @@ const RoomModals = ({
                                 </select>
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Price (₹)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Price (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="number"
                                     className="input-field"
@@ -261,7 +261,7 @@ const RoomModals = ({
                                 />
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Level</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Level <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <select
                                     className="input-field"
                                     value={showEditRoom.floorName || ''}
@@ -287,7 +287,7 @@ const RoomModals = ({
                                 </select>
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Numbers (comma separated)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Numbers (comma separated) <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
                                     type="text"
                                     className="input-field"

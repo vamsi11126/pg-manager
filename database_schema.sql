@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS pgs (
   electricity_data JSONB DEFAULT '{}'::jsonb,
   e_bill_rate NUMERIC DEFAULT 10,
   food_amount NUMERIC DEFAULT 0,
+  map_link TEXT DEFAULT '',
   facilities JSONB DEFAULT '[]'::jsonb,
   neighborhood_details TEXT DEFAULT '',
   gallery_photos JSONB DEFAULT '[]'::jsonb,
@@ -46,6 +47,10 @@ CREATE POLICY "Public can read pgs"
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_pgs_admin_id ON pgs(admin_id);
+
+-- Backfill for existing deployments
+ALTER TABLE pgs
+ADD COLUMN IF NOT EXISTS map_link TEXT DEFAULT '';
 
 -- =====================================================
 -- TENANTS TABLE

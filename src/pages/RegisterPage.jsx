@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { UserPlus, Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
     const { register } = useData();
+    const { success } = useToast();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -77,7 +79,7 @@ const RegisterPage = () => {
         });
 
         if (result.success) {
-            alert('Registration successful! Please login with your credentials.');
+            success('Registration successful. Please login with your credentials.');
             navigate('/login');
         } else {
             setErrors({ email: result.message });
