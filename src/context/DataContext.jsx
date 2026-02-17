@@ -711,7 +711,7 @@ export const DataProvider = ({ children }) => {
             addTenantPaymentRequest, updateTenantPassword,
             createTenantLogin
         }}>
-            {!loading && children}
+            {children}
         </DataContext.Provider>
     );
 };

@@ -46,7 +46,13 @@ const Dashboard = () => {
                     <h1 style={{ marginBottom: '0.25rem' }}>Property Overview</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Manage your buildings and check status</p>
                 </div>
-                <button onClick={() => setShowAddPg(true)} className="btn btn-primary tooltip-target" data-tooltip="Create a new PG property">
+                <button
+                    onClick={() => setShowAddPg(true)}
+                    className="btn btn-primary tooltip-target"
+                    data-tooltip="Create a new PG property"
+                    data-tooltip-side="bottom"
+                    data-tooltip-align="right"
+                >
                     <Plus size={20} /> Add New PG
                 </button>
             </header>

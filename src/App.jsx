@@ -17,7 +17,14 @@ const AppContent = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
   if (loading) {
-    return null;
+    return (
+      <div className="app-loader-screen">
+        <div className="glass-card page-loader page-loader-card">
+          <div className="app-loader" aria-hidden="true" />
+          <p>Loading your workspace...</p>
+        </div>
+      </div>
+    );
   }
 
   if (authRole === 'tenant') {

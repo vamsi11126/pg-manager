@@ -152,7 +152,10 @@ const PGLandingPage = () => {
         return (
             <div className="pg-landing">
                 <div className="lp-shell">
-                    <div className="lp-card">Loading landing page...</div>
+                    <div className="lp-card page-loader page-loader-card">
+                        <div className="app-loader" aria-hidden="true" />
+                        <p>Loading landing page...</p>
+                    </div>
                 </div>
             </div>
         );
