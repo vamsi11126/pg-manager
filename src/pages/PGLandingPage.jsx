@@ -27,6 +27,7 @@ const normalizePg = (dbPg) => ({
     eBillRate: dbPg.e_bill_rate ?? 10,
     foodAmount: dbPg.food_amount ?? 0,
     mapLink: dbPg.map_link ?? '',
+    landingQr: dbPg.landing_qr ?? '',
     facilities: dbPg.facilities ?? [],
     neighborhoodDetails: dbPg.neighborhood_details ?? '',
     galleryPhotos: dbPg.gallery_photos ?? []
@@ -304,9 +305,6 @@ const PGLandingPage = () => {
                                 <h3 style={{ margin: 0 }}>Address</h3>
                             </div>
                             <p style={{ color: 'var(--lp-ink-muted)', lineHeight: 1.6 }}>{pg.address}</p>
-                            <p style={{ marginTop: '0.75rem', color: 'var(--lp-ink-muted)', lineHeight: 1.6 }}>
-                                {pg.neighborhoodDetails || 'Neighborhood highlights will be shared shortly.'}
-                            </p>
                             <p style={{ marginTop: '1rem', fontWeight: 600 }}>Easy access to daily essentials.</p>
                             {pg.mapLink && (
                                 <a
@@ -323,7 +321,7 @@ const PGLandingPage = () => {
                         <div className="lp-map">
                             <h3>Neighborhood Snapshot</h3>
                             <p style={{ color: 'var(--lp-ink-muted)', marginTop: '0.5rem' }}>
-                                Central location with quick connectivity to transit, food hubs, and offices.
+                                {pg.neighborhoodDetails || 'Neighborhood highlights will be shared shortly.'}
                             </p>
                         </div>
                     </div>

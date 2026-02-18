@@ -15,12 +15,13 @@ import VacancySection from '../components/pg-details/VacancySection';
 import PgHeaderTabs from '../components/pg-details/PgHeaderTabs';
 import PgEditModal from '../components/pg-details/PgEditModal';
 import HighlightsSection from '../components/pg-details/HighlightsSection';
+import GuardianSection from '../components/pg-details/GuardianSection';
 import { validateAadhaar } from '../utils/aadhaar';
 
 const PGDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { pgs, updatePg, deletePg, deleteTenant, tenants, addTenant, updateTenant, createTenantLogin } = useData();
+    const { pgs, authRole, updatePg, deletePg, deleteTenant, tenants, addTenant, updateTenant, createTenantLogin } = useData();
     const pg = pgs.find(p => p.id === id);
 
     const [activeTab, setActiveTab] = useState('rooms');
@@ -592,6 +593,7 @@ const PGDetails = () => {
                 handleDeletePg={handleDeletePg}
                 setShowAddRoom={setShowAddRoom}
                 setShowAddTenant={setShowAddTenant}
+                canDeletePg={authRole === 'admin'}
             />
 
             {activeTab === 'rooms' && (
@@ -655,6 +657,9 @@ const PGDetails = () => {
                     handleGenerateBill={handleGenerateBill}
                     getSequentialFloors={getSequentialFloors}
                 />
+            )}
+            {activeTab === 'guardian' && (
+                <GuardianSection pgId={pg.id} isAdmin={authRole === 'admin'} />
             )}
 
             <PgEditModal

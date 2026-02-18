@@ -110,6 +110,9 @@ const LoginPage = () => {
                 <p style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                     Are you a tenant? <Link to="/tenant/login" style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Tenant Login</Link>
                 </p>
+                <p style={{ marginTop: '0.5rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                    Are you a guardian? <Link to="/guardian/login" style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Guardian Login</Link>
+                </p>
             </div>
         </div>
     );

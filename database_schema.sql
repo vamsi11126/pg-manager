@@ -19,12 +19,67 @@ CREATE TABLE IF NOT EXISTS pgs (
   e_bill_rate NUMERIC DEFAULT 10,
   food_amount NUMERIC DEFAULT 0,
   map_link TEXT DEFAULT '',
+  landing_qr TEXT DEFAULT '',
   facilities JSONB DEFAULT '[]'::jsonb,
   neighborhood_details TEXT DEFAULT '',
   gallery_photos JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- =====================================================
+-- GUARDIANS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS guardians (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  pg_id UUID REFERENCES pgs(id) ON DELETE CASCADE NOT NULL,
+  guardian_name TEXT NOT NULL,
+  auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  phone TEXT NOT NULL,
+  guardian_email TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Backfill guardian columns for existing deployments
+ALTER TABLE guardians
+  ADD COLUMN IF NOT EXISTS guardian_name TEXT,
+  ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS phone TEXT,
+  ADD COLUMN IF NOT EXISTS guardian_email TEXT,
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE guardians ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can manage their guardians" ON guardians;
+CREATE POLICY "Admins can manage their guardians"
+  ON guardians
+  FOR ALL
+  USING (admin_id = auth.uid());
+
+DROP POLICY IF EXISTS "Guardian can view own assignment" ON guardians;
+CREATE POLICY "Guardian can view own assignment"
+  ON guardians
+  FOR SELECT
+  USING (auth_user_id = auth.uid());
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_guardians_unique_active_pg
+  ON guardians(pg_id)
+  WHERE is_active = true;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_guardians_unique_active_auth_user
+  ON guardians(auth_user_id)
+  WHERE is_active = true;
+
+CREATE INDEX IF NOT EXISTS idx_guardians_admin_id ON guardians(admin_id);
+CREATE INDEX IF NOT EXISTS idx_guardians_pg_id ON guardians(pg_id);
+CREATE INDEX IF NOT EXISTS idx_guardians_auth_user_id ON guardians(auth_user_id);
+CREATE INDEX IF NOT EXISTS idx_guardians_phone ON guardians(phone);
+CREATE INDEX IF NOT EXISTS idx_guardians_name ON guardians(guardian_name);
 
 -- Enable Row Level Security
 ALTER TABLE pgs ENABLE ROW LEVEL SECURITY;
@@ -36,7 +91,16 @@ DROP POLICY IF EXISTS "Users can manage their own pgs" ON pgs;
 CREATE POLICY "Users can manage their own pgs"
   ON pgs
   FOR ALL
-  USING (admin_id = auth.uid());
+  USING (
+    admin_id = auth.uid()
+    OR EXISTS (
+      SELECT 1
+      FROM guardians g
+      WHERE g.pg_id = pgs.id
+        AND g.auth_user_id = auth.uid()
+        AND g.is_active = true
+    )
+  );
 
 -- Policy: Public can read PGs (for landing pages)
 DROP POLICY IF EXISTS "Public can read pgs" ON pgs;
@@ -51,6 +115,9 @@ CREATE INDEX IF NOT EXISTS idx_pgs_admin_id ON pgs(admin_id);
 -- Backfill for existing deployments
 ALTER TABLE pgs
 ADD COLUMN IF NOT EXISTS map_link TEXT DEFAULT '';
+
+ALTER TABLE pgs
+ADD COLUMN IF NOT EXISTS landing_qr TEXT DEFAULT '';
 
 -- =====================================================
 -- TENANTS TABLE
@@ -74,6 +141,13 @@ CREATE TABLE IF NOT EXISTS tenants (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Backfill tenant columns for existing deployments
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS profession TEXT,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
 -- Enable Row Level Security
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 
@@ -84,7 +158,16 @@ DROP POLICY IF EXISTS "Users can manage their own tenants" ON tenants;
 CREATE POLICY "Users can manage their own tenants"
   ON tenants
   FOR ALL
-  USING (admin_id = auth.uid());
+  USING (
+    admin_id = auth.uid()
+    OR EXISTS (
+      SELECT 1
+      FROM guardians g
+      WHERE g.pg_id = tenants.pg_id
+        AND g.auth_user_id = auth.uid()
+        AND g.is_active = true
+    )
+  );
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_tenants_admin_id ON tenants(admin_id);
@@ -124,18 +207,29 @@ CREATE POLICY "Tenants can link their auth user"
   WITH CHECK (email = (auth.jwt() ->> 'email'));
 
 DROP POLICY IF EXISTS "Tenants can view roommates" ON tenants;
+-- Avoid recursive RLS by using a SECURITY DEFINER helper
+CREATE OR REPLACE FUNCTION tenant_can_view_row(target_pg_id UUID, target_room_number TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM tenants self
+    WHERE lower(trim(self.email)) = lower(trim(auth.jwt() ->> 'email'))
+      AND self.pg_id = target_pg_id
+      AND self.room_number = target_room_number
+    LIMIT 1
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION tenant_can_view_row(UUID, TEXT) TO authenticated;
+
 CREATE POLICY "Tenants can view roommates"
   ON tenants
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM tenants t2
-      WHERE t2.auth_user_id = auth.uid()
-        AND t2.pg_id = tenants.pg_id
-        AND t2.room_number = tenants.room_number
-    )
-  );
+  USING (tenant_can_view_row(pg_id, room_number));
 
 -- =====================================================
 -- PAYMENT REQUESTS TABLE
@@ -164,7 +258,16 @@ DROP POLICY IF EXISTS "Users can manage their own payment requests" ON payment_r
 CREATE POLICY "Users can manage their own payment requests"
   ON payment_requests
   FOR ALL
-  USING (admin_id = auth.uid());
+  USING (
+    admin_id = auth.uid()
+    OR EXISTS (
+      SELECT 1
+      FROM guardians g
+      WHERE g.pg_id = payment_requests.pg_id
+        AND g.auth_user_id = auth.uid()
+        AND g.is_active = true
+    )
+  );
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_payment_requests_admin_id ON payment_requests(admin_id);
@@ -228,7 +331,16 @@ DROP POLICY IF EXISTS "Users can manage their own tenant bills" ON tenant_bills;
 CREATE POLICY "Users can manage their own tenant bills"
   ON tenant_bills
   FOR ALL
-  USING (admin_id = auth.uid());
+  USING (
+    admin_id = auth.uid()
+    OR EXISTS (
+      SELECT 1
+      FROM guardians g
+      WHERE g.pg_id = tenant_bills.pg_id
+        AND g.auth_user_id = auth.uid()
+        AND g.is_active = true
+    )
+  );
 
 DROP POLICY IF EXISTS "Tenants can view their own bills" ON tenant_bills;
 CREATE POLICY "Tenants can view their own bills"
@@ -300,6 +412,7 @@ $$ LANGUAGE plpgsql;
 
 -- Drop existing triggers if they exist
 DROP TRIGGER IF EXISTS update_pgs_updated_at ON pgs;
+DROP TRIGGER IF EXISTS update_guardians_updated_at ON guardians;
 DROP TRIGGER IF EXISTS update_tenants_updated_at ON tenants;
 DROP TRIGGER IF EXISTS update_payment_requests_updated_at ON payment_requests;
 DROP TRIGGER IF EXISTS update_tenant_bills_updated_at ON tenant_bills;
@@ -307,6 +420,12 @@ DROP TRIGGER IF EXISTS update_tenant_bills_updated_at ON tenant_bills;
 -- Trigger for pgs table
 CREATE TRIGGER update_pgs_updated_at
     BEFORE UPDATE ON pgs
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for guardians table
+CREATE TRIGGER update_guardians_updated_at
+    BEFORE UPDATE ON guardians
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 
 const Dashboard = () => {
-    const { pgs, tenants, addPg } = useData();
+    const { pgs, tenants, addPg, authRole } = useData();
     const { error: showError } = useToast();
     const [showAddPg, setShowAddPg] = useState(false);
     const [newPg, setNewPg] = useState({
@@ -46,15 +46,17 @@ const Dashboard = () => {
                     <h1 style={{ marginBottom: '0.25rem' }}>Property Overview</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Manage your buildings and check status</p>
                 </div>
-                <button
-                    onClick={() => setShowAddPg(true)}
-                    className="btn btn-primary tooltip-target"
-                    data-tooltip="Create a new PG property"
-                    data-tooltip-side="bottom"
-                    data-tooltip-align="right"
-                >
-                    <Plus size={20} /> Add New PG
-                </button>
+                {authRole === 'admin' && (
+                    <button
+                        onClick={() => setShowAddPg(true)}
+                        className="btn btn-primary tooltip-target"
+                        data-tooltip="Create a new PG property"
+                        data-tooltip-side="bottom"
+                        data-tooltip-align="right"
+                    >
+                        <Plus size={20} /> Add New PG
+                    </button>
+                )}
             </header>
 
             {/* Stats row */}
@@ -93,9 +95,11 @@ const Dashboard = () => {
                     </div>
                     <h3>No PGs found</h3>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Get started by adding your first property</p>
-                    <button onClick={() => setShowAddPg(true)} className="btn btn-outline" style={{ margin: '0 auto' }}>
-                        Add Property
-                    </button>
+                    {authRole === 'admin' && (
+                        <button onClick={() => setShowAddPg(true)} className="btn btn-outline" style={{ margin: '0 auto' }}>
+                            Add Property
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-2">
@@ -136,7 +140,7 @@ const Dashboard = () => {
             )}
 
             {/* Add PG Modal */}
-            {showAddPg && (
+            {showAddPg && authRole === 'admin' && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',

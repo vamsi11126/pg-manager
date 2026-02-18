@@ -1,36 +1,20 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { LogIn, User } from 'lucide-react';
+import { LogIn, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const TenantLoginPage = () => {
-    const { loginAsTenant, getTenantSupportContact } = useData();
-    const [email, setEmail] = useState('');
+const GuardianLoginPage = () => {
+    const { loginAsGuardian } = useData();
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [guardianContact, setGuardianContact] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const res = await loginAsTenant(email, password);
+        const res = await loginAsGuardian(phone, password);
         if (!res?.success) {
             setError(res?.message || 'Login failed');
-        }
-    };
-
-    const handleEmailBlur = async () => {
-        const trimmedEmail = email.trim();
-        if (!trimmedEmail || !/\S+@\S+\.\S+/.test(trimmedEmail)) {
-            setGuardianContact(null);
-            return;
-        }
-
-        try {
-            const contact = await getTenantSupportContact(trimmedEmail);
-            setGuardianContact(contact);
-        } catch {
-            setGuardianContact(null);
         }
     };
 
@@ -38,25 +22,25 @@ const TenantLoginPage = () => {
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="glass-card" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                    <div style={{ background: 'var(--secondary)', padding: '1rem', borderRadius: '50%' }}>
-                        <User size={32} color="white" />
+                    <div style={{ background: 'var(--primary)', padding: '1rem', borderRadius: '50%' }}>
+                        <Shield size={32} color="white" />
                     </div>
                 </div>
-                <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Tenant Login</h2>
+                <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Guardian Login</h2>
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-                    View bills and raise payment tickets
+                    Manage your assigned PG property
                 </p>
 
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Email Address</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Phone Number</label>
                         <input
-                            type="email"
+                            type="text"
                             className="input-field"
-                            placeholder="tenant@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            onBlur={handleEmailBlur}
+                            placeholder="9876543210"
+                            maxLength="10"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                             required
                         />
                     </div>
@@ -65,7 +49,7 @@ const TenantLoginPage = () => {
                         <input
                             type="password"
                             className="input-field"
-                            placeholder="••••••••"
+                            placeholder="********"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -76,26 +60,22 @@ const TenantLoginPage = () => {
                         Sign In
                     </button>
                 </form>
+
                 {error && (
                     <p style={{ marginTop: '1rem', color: 'var(--danger)', fontSize: '0.875rem', textAlign: 'center' }}>
                         {error}
                     </p>
                 )}
-                {guardianContact && (
-                    <p style={{ marginTop: '0.75rem', color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center' }}>
-                        Assigned Guardian: <strong>{guardianContact.name}</strong> ({guardianContact.phone})
-                    </p>
-                )}
 
-                <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                <p style={{ marginTop: '1.25rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                     Are you an owner? <Link to="/login" style={{ color: 'var(--secondary)', textDecoration: 'underline' }}>Owner Login</Link>
                 </p>
                 <p style={{ marginTop: '0.5rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Are you a guardian? <Link to="/guardian/login" style={{ color: 'var(--secondary)', textDecoration: 'underline' }}>Guardian Login</Link>
+                    Are you a tenant? <Link to="/tenant/login" style={{ color: 'var(--secondary)', textDecoration: 'underline' }}>Tenant Login</Link>
                 </p>
             </div>
         </div>
     );
 };
 
-export default TenantLoginPage;
+export default GuardianLoginPage;

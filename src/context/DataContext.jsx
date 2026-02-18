@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useToast } from './ToastContext';
+import { guardianEmailFromPhone, normalizePhone } from '../utils/guardian';
 
 const DataContext = createContext();
 
@@ -13,6 +14,7 @@ export const DataProvider = ({ children }) => {
     const [tenantRoommates, setTenantRoommates] = useState([]);
     const [tenantBills, setTenantBills] = useState([]);
     const [tenantPaymentRequests, setTenantPaymentRequests] = useState([]);
+    const [guardianProfile, setGuardianProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [pgs, setPgs] = useState([]);
 
@@ -29,6 +31,7 @@ export const DataProvider = ({ children }) => {
         eBillRate: dbPg.e_bill_rate ?? 10,
         foodAmount: dbPg.food_amount ?? 0,
         mapLink: dbPg.map_link ?? '',
+        landingQr: dbPg.landing_qr ?? '',
         facilities: dbPg.facilities ?? [],
         neighborhoodDetails: dbPg.neighborhood_details ?? '',
         galleryPhotos: dbPg.gallery_photos ?? [],
@@ -47,6 +50,7 @@ export const DataProvider = ({ children }) => {
         e_bill_rate: pg.eBillRate ?? pg.e_bill_rate ?? 10,
         food_amount: pg.foodAmount ?? pg.food_amount ?? 0,
         map_link: pg.mapLink ?? pg.map_link ?? '',
+        landing_qr: pg.landingQr ?? pg.landing_qr ?? '',
         facilities: pg.facilities ?? [],
         neighborhood_details: pg.neighborhoodDetails ?? pg.neighborhood_details ?? '',
         gallery_photos: pg.galleryPhotos ?? pg.gallery_photos ?? []
@@ -131,6 +135,66 @@ export const DataProvider = ({ children }) => {
         return resolvedTenant;
     };
 
+    const fetchGuardianByAuthId = async (authUserId) => {
+        const { data: guardianRow, error: guardianError } = await supabase
+            .from('guardians')
+            .select('*')
+            .eq('auth_user_id', authUserId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (guardianError) {
+            console.error('Error fetching guardian assignment:', guardianError);
+        }
+
+        if (!guardianRow) {
+            setGuardianProfile(null);
+            return null;
+        }
+
+        setGuardianProfile({
+            id: guardianRow.id,
+            adminId: guardianRow.admin_id,
+            pgId: guardianRow.pg_id,
+            name: guardianRow.guardian_name,
+            phone: guardianRow.phone,
+            email: guardianRow.guardian_email
+        });
+
+        const { data: pgData, error: pgError } = await supabase
+            .from('pgs')
+            .select('*')
+            .eq('id', guardianRow.pg_id)
+            .maybeSingle();
+        if (pgError) {
+            console.error('Error fetching guardian PG:', pgError);
+        }
+
+        setPgs(pgData ? [transformPgFromDB(pgData)] : []);
+
+        const { data: guardianTenants, error: tenantsError } = await supabase
+            .from('tenants')
+            .select('*')
+            .eq('pg_id', guardianRow.pg_id)
+            .order('created_at', { ascending: false });
+        if (tenantsError) {
+            console.error('Error fetching guardian tenants:', tenantsError);
+        }
+        setTenants((guardianTenants || []).map(transformTenantFromDB));
+
+        const { data: guardianRequests, error: requestsError } = await supabase
+            .from('payment_requests')
+            .select('*')
+            .eq('pg_id', guardianRow.pg_id)
+            .order('created_at', { ascending: false });
+        if (requestsError) {
+            console.error('Error fetching guardian payment requests:', requestsError);
+        }
+        setPaymentRequests((guardianRequests || []).map(transformPaymentFromDB));
+
+        return guardianRow;
+    };
+
     // Auth State Listener
     useEffect(() => {
         const fetchProfile = async (session) => {
@@ -144,13 +208,33 @@ export const DataProvider = ({ children }) => {
                 if (profile?.role === 'admin') {
                     setAuthRole('admin');
                     setUser({ ...session.user, ...profile });
+                    setGuardianProfile(null);
                     setTenantUser(null);
                     await fetchPGs(session.user.id);
                     await fetchTenants(session.user.id);
                     await fetchPaymentRequests(session.user.id);
+                } else if (profile?.role === 'guardian') {
+                    setAuthRole('guardian');
+                    setUser({ ...session.user, ...profile });
+                    setTenantUser(null);
+                    setTenantPg(null);
+                    setTenantRoommates([]);
+                    setTenantBills([]);
+                    setTenantPaymentRequests([]);
+                    const guardian = await fetchGuardianByAuthId(session.user.id);
+                    if (!guardian) {
+                        await supabase.auth.signOut();
+                        setAuthRole(null);
+                        setUser(null);
+                        setGuardianProfile(null);
+                        setPgs([]);
+                        setTenants([]);
+                        setPaymentRequests([]);
+                    }
                 } else {
                     setAuthRole('tenant');
                     setUser(null);
+                    setGuardianProfile(null);
                     const tenant = await fetchTenantByAuthId(session.user.id, session.user.email);
                     if (!tenant) {
                         await supabase.auth.signOut();
@@ -165,6 +249,7 @@ export const DataProvider = ({ children }) => {
             } else {
                 setUser(null);
                 setTenantUser(null);
+                setGuardianProfile(null);
                 setAuthRole(null);
                 setTenantPg(null);
                 setTenantRoommates([]);
@@ -259,6 +344,9 @@ export const DataProvider = ({ children }) => {
 
         if (profile?.role !== 'admin') {
             await supabase.auth.signOut();
+            if (profile?.role === 'guardian') {
+                return { success: false, message: 'This login is for owners only. Please use guardian login.' };
+            }
             return { success: false, message: 'This login is for owners only. Please use tenant login.' };
         }
         return { success: true };
@@ -281,8 +369,11 @@ export const DataProvider = ({ children }) => {
             .eq('id', data.user.id)
             .single();
 
-        if (profile?.role === 'admin') {
+        if (profile?.role === 'admin' || profile?.role === 'guardian') {
             await supabase.auth.signOut();
+            if (profile?.role === 'guardian') {
+                return { success: false, message: 'This login is for tenants only. Please use guardian login.' };
+            }
             return { success: false, message: 'This login is for tenants only. Please use owner login.' };
         }
 
@@ -294,15 +385,64 @@ export const DataProvider = ({ children }) => {
         return { success: true };
     };
 
+    const loginAsGuardian = async (phone, password) => {
+        const normalizedPhone = normalizePhone(phone);
+        if (!/^\d{10}$/.test(normalizedPhone)) {
+            return { success: false, message: 'Phone number must be exactly 10 digits' };
+        }
+
+        const email = guardianEmailFromPhone(normalizedPhone);
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (error) {
+            return { success: false, message: error.message };
+        }
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+        if (profile?.role !== 'guardian') {
+            await supabase.auth.signOut();
+            return { success: false, message: 'This login is for guardians only.' };
+        }
+
+        const guardian = await fetchGuardianByAuthId(data.user.id);
+        if (!guardian) {
+            await supabase.auth.signOut();
+            return { success: false, message: 'No active guardian assignment found. Contact your PG owner.' };
+        }
+
+        return { success: true };
+    };
+
     const logout = async () => {
         await supabase.auth.signOut();
         setUser(null);
         setTenantUser(null);
+        setGuardianProfile(null);
         setAuthRole(null);
     };
 
+    const getCurrentAdminId = () => {
+        if (authRole === 'admin') return user?.id || null;
+        if (authRole === 'guardian') return guardianProfile?.adminId || null;
+        return null;
+    };
+
+    const canAccessPg = (pgId) => {
+        if (authRole === 'admin') return true;
+        if (authRole === 'guardian') return guardianProfile?.pgId === pgId;
+        return false;
+    };
+
     const addPg = async (pgData) => {
-        if (!user) {
+        if (!user || authRole !== 'admin') {
             showError('Please login to continue.');
             return;
         }
@@ -355,6 +495,11 @@ export const DataProvider = ({ children }) => {
     };
 
     const deletePg = async (pgId) => {
+        if (authRole !== 'admin') {
+            showError('Only admin can delete properties.');
+            return;
+        }
+
         const { error } = await supabase
             .from('pgs')
             .delete()
@@ -435,10 +580,20 @@ export const DataProvider = ({ children }) => {
     // Add Tenant
     const addTenant = async (tenantData) => {
         if (!user) return;
+        if (!canAccessPg(tenantData.pgId)) {
+            showError('You can only add tenant in your assigned PG.');
+            return;
+        }
+
+        const currentAdminId = getCurrentAdminId();
+        if (!currentAdminId) {
+            showError('Could not resolve admin scope.');
+            return;
+        }
 
         const dbTenant = {
             ...transformTenantToDB(tenantData),
-            admin_id: user.id,
+            admin_id: currentAdminId,
             pg_id: tenantData.pgId
         };
 
@@ -512,10 +667,22 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const getApiBaseUrl = () => (import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email')
+        .replace('/send-tenant-email', '');
+
+    const getAccessToken = async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        return sessionData?.session?.access_token || '';
+    };
+
     const createTenantLogin = async (tenantId, password) => {
-        const res = await fetch(import.meta.env.VITE_EMAIL_API_URL?.replace('/send-tenant-email', '/create-tenant-login') || 'http://localhost:4000/create-tenant-login', {
+        const token = await getAccessToken();
+        const res = await fetch(`${getApiBaseUrl()}/create-tenant-login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token ? `Bearer ${token}` : ''
+            },
             body: JSON.stringify({ tenantId, password })
         });
         if (!res.ok) {
@@ -523,6 +690,70 @@ export const DataProvider = ({ children }) => {
             throw new Error(data?.error || 'Failed to create tenant login');
         }
         return true;
+    };
+
+    const getGuardianForPg = async (pgId) => {
+        const token = await getAccessToken();
+        const res = await fetch(`${getApiBaseUrl()}/guardian/${pgId}`, {
+            method: 'GET',
+            headers: {
+                Authorization: token ? `Bearer ${token}` : ''
+            }
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Failed to fetch guardian');
+        }
+        const data = await res.json();
+        return data?.guardian || null;
+    };
+
+    const assignGuardianForPg = async ({ pgId, guardianName, phone, password }) => {
+        const token = await getAccessToken();
+        const res = await fetch(`${getApiBaseUrl()}/guardian/assign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({ pgId, guardianName, phone, password })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Failed to assign guardian');
+        }
+        const data = await res.json();
+        return data?.guardian || null;
+    };
+
+    const removeGuardianForPg = async (pgId) => {
+        const token = await getAccessToken();
+        const res = await fetch(`${getApiBaseUrl()}/guardian/${pgId}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: token ? `Bearer ${token}` : ''
+            }
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Failed to remove guardian');
+        }
+        return true;
+    };
+
+    const getTenantSupportContact = async (email) => {
+        const trimmed = (email || '').trim();
+        if (!trimmed) return null;
+
+        const url = new URL(`${getApiBaseUrl()}/tenant-support-contact`);
+        url.searchParams.set('email', trimmed);
+        const res = await fetch(url.toString(), { method: 'GET' });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Failed to fetch support contact');
+        }
+        const data = await res.json();
+        return data?.guardian || null;
     };
 
     // Delete Tenant
@@ -559,9 +790,19 @@ export const DataProvider = ({ children }) => {
     // Add Payment Request (for future tenant app or admin manual entry)
     const addPaymentRequest = async (requestData) => {
         if (!user) return;
+        if (!canAccessPg(requestData.pgId)) {
+            showError('You can only create requests for your assigned PG.');
+            return;
+        }
+
+        const currentAdminId = getCurrentAdminId();
+        if (!currentAdminId) {
+            showError('Could not resolve admin scope.');
+            return;
+        }
 
         const dbRequest = {
-            admin_id: user.id,
+            admin_id: currentAdminId,
             pg_id: requestData.pgId,
             tenant_id: requestData.tenantId,
             tenant_name: requestData.tenantName,
@@ -660,7 +901,7 @@ export const DataProvider = ({ children }) => {
 
     // Real-time Subscriptions
     useEffect(() => {
-        if (!user) return;
+        if (!user || authRole !== 'admin') return;
 
         // Subscribe to PGs changes
         const pgsSubscription = supabase
@@ -718,17 +959,17 @@ export const DataProvider = ({ children }) => {
             supabase.removeChannel(tenantsSubscription);
             supabase.removeChannel(paymentsSubscription);
         };
-    }, [user]);
+    }, [user, authRole]);
 
     return (
         <DataContext.Provider value={{
-            user, tenantUser, tenantPg, tenantRoommates, tenantBills, tenantPaymentRequests,
-            authRole, login, loginAsOwner, loginAsTenant, logout, register, loading,
+            user, tenantUser, tenantPg, tenantRoommates, tenantBills, tenantPaymentRequests, guardianProfile,
+            authRole, login, loginAsOwner, loginAsTenant, loginAsGuardian, logout, register, loading,
             pgs, addPg, updatePg, deletePg,
             tenants, addTenant, updateTenant, deleteTenant,
             paymentRequests, addPaymentRequest, updatePaymentRequestStatus,
             addTenantPaymentRequest, updateTenantPassword, updateAdminPassword, sendPasswordResetEmail,
-            createTenantLogin
+            createTenantLogin, getGuardianForPg, assignGuardianForPg, removeGuardianForPg, getTenantSupportContact
         }}>
             {children}
         </DataContext.Provider>

@@ -1,17 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ImagePlus, Plus, Save, X } from 'lucide-react';
+import { useData } from '../../context/DataContext';
 
 const HighlightsSection = ({ pg, updatePg }) => {
+    const { authRole } = useData();
     const [facilityInput, setFacilityInput] = useState('');
     const [facilities, setFacilities] = useState(pg?.facilities || []);
-    const [neighborhoodDetails, setNeighborhoodDetails] = useState(pg?.neighborhoodDetails || '');
+    const [neighborhoodSnapshot, setNeighborhoodSnapshot] = useState(pg?.neighborhoodDetails || '');
     const [galleryPhotos, setGalleryPhotos] = useState(pg?.galleryPhotos || []);
+    const [landingQr, setLandingQr] = useState(pg?.landingQr || '');
     const fileInputRef = useRef(null);
 
     useEffect(() => {
         setFacilities(pg?.facilities || []);
-        setNeighborhoodDetails(pg?.neighborhoodDetails || '');
+        setNeighborhoodSnapshot(pg?.neighborhoodDetails || '');
         setGalleryPhotos(pg?.galleryPhotos || []);
+        setLandingQr(pg?.landingQr || '');
     }, [pg?.id]);
 
     const handleAddFacility = () => {
@@ -61,10 +65,25 @@ const HighlightsSection = ({ pg, updatePg }) => {
             {
                 ...pg,
                 facilities,
-                neighborhoodDetails,
-                galleryPhotos
+                neighborhoodDetails: neighborhoodSnapshot,
+                galleryPhotos,
+                landingQr
             },
             { successMessage: 'Highlights section updated successfully.' }
+        );
+    };
+
+    const handleGenerateLandingQr = () => {
+        if (landingQr) return;
+        const landingUrl = `${window.location.origin}/pg/${pg.id}/landingpage`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(landingUrl)}`;
+        setLandingQr(qrUrl);
+        updatePg(
+            {
+                ...pg,
+                landingQr: qrUrl
+            },
+            { successMessage: 'Landing page QR generated and saved.' }
         );
     };
 
@@ -118,13 +137,13 @@ const HighlightsSection = ({ pg, updatePg }) => {
             </div>
 
             <div className="glass-card" style={{ padding: '1.5rem' }}>
-                <h3 style={{ marginTop: 0 }}>Neighborhood Details</h3>
+                <h3 style={{ marginTop: 0 }}>Neighborhood Snapshot</h3>
                 <textarea
                     className="input-field"
                     style={{ minHeight: '120px', resize: 'vertical' }}
-                    placeholder="Describe nearby hotspots, commute, grocery access, etc."
-                    value={neighborhoodDetails}
-                    onChange={(e) => setNeighborhoodDetails(e.target.value)}
+                    placeholder="Describe connectivity, nearby essentials, commute access, safety, and locality highlights."
+                    value={neighborhoodSnapshot}
+                    onChange={(e) => setNeighborhoodSnapshot(e.target.value)}
                 />
             </div>
 
@@ -179,6 +198,30 @@ const HighlightsSection = ({ pg, updatePg }) => {
                             </div>
                         ))}
                     </div>
+                )}
+            </div>
+
+            <div className="glass-card" style={{ padding: '1.5rem' }}>
+                <h3 style={{ marginTop: 0 }}>Landing Page QR</h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                    Generate QR once for this PG landing page and share it with prospects.
+                </p>
+                {landingQr ? (
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                        <img src={landingQr} alt="Landing page QR" style={{ width: '220px', maxWidth: '100%', borderRadius: '12px', border: '1px solid var(--border-glass)' }} />
+                        <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                            QR generated and stored. Regeneration is disabled.
+                        </p>
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleGenerateLandingQr}
+                        disabled={authRole !== 'admin'}
+                    >
+                        Generate Landing QR
+                    </button>
                 )}
             </div>
 

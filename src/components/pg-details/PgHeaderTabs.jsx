@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Bed, Edit2, LayoutGrid, Plus, Sparkles, Trash2, UserPlus, Utensils, Wifi, Zap } from 'lucide-react';
+import { ArrowLeft, Bed, Edit2, LayoutGrid, Plus, ShieldCheck, Sparkles, Trash2, UserPlus, Utensils, Wifi, Zap } from 'lucide-react';
 
 const PgHeaderTabs = ({
     pg,
@@ -9,7 +9,8 @@ const PgHeaderTabs = ({
     setShowEditPg,
     handleDeletePg,
     setShowAddRoom,
-    setShowAddTenant
+    setShowAddTenant,
+    canDeletePg = true
 }) => {
     return (
         <>
@@ -63,9 +64,11 @@ const PgHeaderTabs = ({
                         <button onClick={() => setShowEditPg(true)} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem' }} data-tooltip="Edit PG name, address, and map link">
                             <Edit2 size={18} /> Edit PG
                         </button>
-                        <button onClick={handleDeletePg} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} data-tooltip="Delete this PG and its related data">
-                            <Trash2 size={18} /> Delete PG
-                        </button>
+                        {canDeletePg && (
+                            <button onClick={handleDeletePg} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} data-tooltip="Delete this PG and its related data">
+                                <Trash2 size={18} /> Delete PG
+                            </button>
+                        )}
                         <button onClick={() => setShowAddRoom(true)} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem' }} data-tooltip="Add a new room category to this PG">
                             <Plus size={18} /> Add Room Category
                         </button>
@@ -147,6 +150,14 @@ const PgHeaderTabs = ({
                     data-tooltip="Configure electricity rate and generate monthly bills"
                 >
                     <Zap size={18} /> Electricity
+                </button>
+                <button
+                    onClick={() => setActiveTab('guardian')}
+                    className={`btn manage-tab-btn tooltip-target ${activeTab === 'guardian' ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ background: activeTab === 'guardian' ? 'var(--primary)' : 'transparent' }}
+                    data-tooltip="Assign optional guardian credentials for this PG"
+                >
+                    <ShieldCheck size={18} /> Guardian
                 </button>
             </div>
         </>
