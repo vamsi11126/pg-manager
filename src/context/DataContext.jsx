@@ -485,12 +485,14 @@ export const DataProvider = ({ children }) => {
         if (error) {
             console.error('Error updating PG:', error);
             showError(errorMessage || ('Could not save changes. ' + error.message));
+            return { success: false, message: error.message };
         } else {
             const next = transformPgFromDB(data);
             setPgs(pgs.map(pg => pg.id === updatedPg.id ? next : pg));
             if (!silentSuccess) {
                 success(successMessage);
             }
+            return { success: true, data: next };
         }
     };
 
@@ -667,8 +669,16 @@ export const DataProvider = ({ children }) => {
         }
     };
 
-    const getApiBaseUrl = () => (import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email')
-        .replace('/send-tenant-email', '');
+    const getApiBaseUrl = () => {
+        const explicitBase = import.meta.env.VITE_API_BASE_URL;
+        if (explicitBase) return explicitBase.replace(/\/$/, '');
+
+        const emailApi = import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email';
+        const fromEmailApi = emailApi.replace('/send-tenant-email', '').replace(/\/$/, '');
+        if (/^https?:\/\//i.test(fromEmailApi)) return fromEmailApi;
+
+        return 'http://localhost:4000';
+    };
 
     const getAccessToken = async () => {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -745,15 +755,33 @@ export const DataProvider = ({ children }) => {
         const trimmed = (email || '').trim();
         if (!trimmed) return null;
 
-        const url = new URL(`${getApiBaseUrl()}/tenant-support-contact`);
-        url.searchParams.set('email', trimmed);
-        const res = await fetch(url.toString(), { method: 'GET' });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data?.error || 'Failed to fetch support contact');
+        const endpointPaths = [
+            `${getApiBaseUrl()}/tenant-support-contact`,
+            'http://localhost:4000/tenant-support-contact'
+        ];
+
+        let lastError = null;
+        for (const endpoint of endpointPaths) {
+            try {
+                const url = new URL(endpoint);
+                url.searchParams.set('email', trimmed);
+                const res = await fetch(url.toString(), { method: 'GET' });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    lastError = new Error(data?.error || `Failed to fetch support contact (${res.status})`);
+                    continue;
+                }
+                const data = await res.json();
+                return data?.guardian || null;
+            } catch (err) {
+                lastError = err;
+            }
         }
-        const data = await res.json();
-        return data?.guardian || null;
+
+        if (lastError) {
+            throw lastError;
+        }
+        return null;
     };
 
     // Delete Tenant

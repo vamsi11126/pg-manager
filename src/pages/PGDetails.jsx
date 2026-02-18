@@ -627,6 +627,7 @@ const PGDetails = () => {
                 <HighlightsSection
                     pg={pg}
                     updatePg={updatePg}
+                    onSaveSuccess={() => setActiveTab('rooms')}
                 />
             )}
 

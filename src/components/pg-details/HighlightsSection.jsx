@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ImagePlus, Plus, Save, X } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 
-const HighlightsSection = ({ pg, updatePg }) => {
+const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
     const { authRole } = useData();
     const [facilityInput, setFacilityInput] = useState('');
     const [facilities, setFacilities] = useState(pg?.facilities || []);
@@ -60,8 +60,8 @@ const HighlightsSection = ({ pg, updatePg }) => {
         setGalleryPhotos(prev => (prev || []).filter(p => p.id !== photoId));
     };
 
-    const handleSave = () => {
-        updatePg(
+    const handleSave = async () => {
+        const res = await updatePg(
             {
                 ...pg,
                 facilities,
@@ -71,6 +71,9 @@ const HighlightsSection = ({ pg, updatePg }) => {
             },
             { successMessage: 'Highlights section updated successfully.' }
         );
+        if (res?.success && typeof onSaveSuccess === 'function') {
+            onSaveSuccess();
+        }
     };
 
     const handleGenerateLandingQr = () => {
