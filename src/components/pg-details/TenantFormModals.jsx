@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { validateAadhaar } from '../../utils/aadhaar';
 
 export const EditTenantModal = ({
     showEditTenant,
@@ -85,7 +86,12 @@ export const EditTenantModal = ({
                                 onChange={(e) => {
                                     const val = e.target.value.replace(/\D/g, '').slice(0, 12);
                                     setEditTenant({ ...editTenant, aadhar: val });
-                                    if (val.length === 12) setEditAadharError('');
+                                    if (val.length === 12) {
+                                        const validation = validateAadhaar(val);
+                                        setEditAadharError(validation.isValid ? '' : validation.error);
+                                    } else {
+                                        setEditAadharError('');
+                                    }
                                 }}
                                 required
                             />
@@ -257,7 +263,12 @@ export const AddTenantModal = ({
                                 onChange={(e) => {
                                     const val = e.target.value.replace(/\D/g, '').slice(0, 12);
                                     setNewTenant({ ...newTenant, aadhar: val });
-                                    if (val.length === 12) setAadharError('');
+                                    if (val.length === 12) {
+                                        const validation = validateAadhaar(val);
+                                        setAadharError(validation.isValid ? '' : validation.error);
+                                    } else {
+                                        setAadharError('');
+                                    }
                                 }}
                                 required
                                 placeholder="12 digit number"

@@ -15,6 +15,7 @@ import VacancySection from '../components/pg-details/VacancySection';
 import PgHeaderTabs from '../components/pg-details/PgHeaderTabs';
 import PgEditModal from '../components/pg-details/PgEditModal';
 import HighlightsSection from '../components/pg-details/HighlightsSection';
+import { validateAadhaar } from '../utils/aadhaar';
 
 const PGDetails = () => {
     const { id } = useParams();
@@ -492,9 +493,10 @@ const PGDetails = () => {
             setPhoneError('');
         }
 
-        // Aadhar validation
-        if (newTenant.aadhar.length !== 12) {
-            setAadharError('Aadhar number must be exactly 12 digits');
+        // Aadhaar validation
+        const aadhaarValidation = validateAadhaar(newTenant.aadhar);
+        if (!aadhaarValidation.isValid) {
+            setAadharError(aadhaarValidation.error);
             hasError = true;
         } else {
             setAadharError('');
@@ -534,8 +536,9 @@ const PGDetails = () => {
             setEditPhoneError('');
         }
 
-        if (editTenant.aadhar.length !== 12) {
-            setEditAadharError('Aadhar number must be exactly 12 digits');
+        const editAadhaarValidation = validateAadhaar(editTenant.aadhar);
+        if (!editAadhaarValidation.isValid) {
+            setEditAadharError(editAadhaarValidation.error);
             hasError = true;
         } else {
             setEditAadharError('');

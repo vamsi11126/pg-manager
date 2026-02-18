@@ -9,7 +9,9 @@ import PGDetails from './pages/PGDetails';
 import TenantsPage from './pages/TenantsPage';
 import TenantDashboard from './pages/TenantDashboard';
 import PGLandingPage from './pages/PGLandingPage';
-import { Home, LogOut, Package, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import AdminSettings from './pages/AdminSettings';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import { Home, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 
 const AppContent = () => {
   const { user, tenantUser, authRole, logout, loading } = useData();
@@ -33,6 +35,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/tenant" element={<TenantDashboard />} />
           <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<Navigate to="/tenant" />} />
         </Routes>
       </Router>
@@ -47,6 +50,7 @@ const AppContent = () => {
           <Route path="/tenant/login" element={<TenantLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </Router>
@@ -57,6 +61,7 @@ const AppContent = () => {
     <Router>
       <Routes>
         <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="*"
           element={(
@@ -101,6 +106,14 @@ const AppContent = () => {
                   >
                     <Home size={20} /> {!isSidebarCollapsed && 'Dashboard'}
                   </Link>
+                  <Link
+                    to="/settings"
+                    className="btn btn-primary tooltip-target"
+                    data-tooltip="Update account settings"
+                    style={{ background: 'transparent', color: 'var(--text-main)', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
+                  >
+                    <Settings size={20} /> {!isSidebarCollapsed && 'Settings'}
+                  </Link>
 
                 </nav>
 
@@ -136,6 +149,7 @@ const AppContent = () => {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/pg/:id" element={<PGDetails />} />
                   <Route path="/tenants" element={<TenantsPage />} />
+                  <Route path="/settings" element={<AdminSettings />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
               </main>

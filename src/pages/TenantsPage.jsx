@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Plus, User, Phone, Mail, Briefcase, FileText, Calendar, IndianRupee, Search, ArrowLeft, X, Trash2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { validateAadhaar } from '../utils/aadhaar';
 
 const TenantsPage = () => {
     const { pgs, tenants, addTenant, deleteTenant, paymentRequests, updatePaymentRequestStatus } = useData();
@@ -63,9 +64,10 @@ const TenantsPage = () => {
             setPhoneError('');
         }
 
-        // Aadhar validation
-        if (newTenant.aadhar.length !== 12) {
-            setAadharError('Aadhar number must be exactly 12 digits');
+        // Aadhaar validation
+        const aadhaarValidation = validateAadhaar(newTenant.aadhar);
+        if (!aadhaarValidation.isValid) {
+            setAadharError(aadhaarValidation.error);
             hasError = true;
         } else {
             setAadharError('');
@@ -299,6 +301,12 @@ const TenantsPage = () => {
                                         value={newTenant.aadhar} onChange={(e) => {
                                             const val = e.target.value.replace(/\D/g, '');
                                             setNewTenant({ ...newTenant, aadhar: val });
+                                            if (val.length === 12) {
+                                                const validation = validateAadhaar(val);
+                                                setAadharError(validation.isValid ? '' : validation.error);
+                                            } else {
+                                                setAadharError('');
+                                            }
                                         }}
                                         required
                                     />

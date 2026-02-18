@@ -639,6 +639,25 @@ export const DataProvider = ({ children }) => {
         return { success: true };
     };
 
+    const updateAdminPassword = async (newPassword) => {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) {
+            return { success: false, message: error.message };
+        }
+        return { success: true };
+    };
+
+    const sendPasswordResetEmail = async (email, redirectTo) => {
+        const normalizedEmail = email.trim().toLowerCase();
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+            redirectTo
+        });
+        if (error) {
+            return { success: false, message: error.message };
+        }
+        return { success: true };
+    };
+
     // Real-time Subscriptions
     useEffect(() => {
         if (!user) return;
@@ -708,7 +727,7 @@ export const DataProvider = ({ children }) => {
             pgs, addPg, updatePg, deletePg,
             tenants, addTenant, updateTenant, deleteTenant,
             paymentRequests, addPaymentRequest, updatePaymentRequestStatus,
-            addTenantPaymentRequest, updateTenantPassword,
+            addTenantPaymentRequest, updateTenantPassword, updateAdminPassword, sendPasswordResetEmail,
             createTenantLogin
         }}>
             {children}

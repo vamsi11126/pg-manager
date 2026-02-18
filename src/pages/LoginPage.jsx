@@ -7,7 +7,8 @@ const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { loginAsOwner } = useData();
+    const [resetMessage, setResetMessage] = useState('');
+    const { loginAsOwner, sendPasswordResetEmail } = useData();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -16,6 +17,24 @@ const LoginPage = () => {
         if (!res?.success) {
             setError(res?.message || 'Login failed');
         }
+    };
+
+    const handleForgotPassword = async () => {
+        setError('');
+        setResetMessage('');
+
+        if (!email.trim()) {
+            setError('Enter your email first to receive reset link');
+            return;
+        }
+
+        const redirectTo = `${window.location.origin}/reset-password`;
+        const res = await sendPasswordResetEmail(email, redirectTo);
+        if (!res.success) {
+            setError(res.message || 'Could not send reset email');
+            return;
+        }
+        setResetMessage('Password reset link sent to your email.');
     };
 
     return (
@@ -53,6 +72,21 @@ const LoginPage = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
+                        <button
+                            type="button"
+                            onClick={handleForgotPassword}
+                            style={{
+                                marginTop: '0.75rem',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--secondary)',
+                                cursor: 'pointer',
+                                textDecoration: 'underline',
+                                padding: 0
+                            }}
+                        >
+                            Forgot password?
+                        </button>
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                         <LogIn size={20} />
@@ -62,6 +96,11 @@ const LoginPage = () => {
                 {error && (
                     <p style={{ marginTop: '1rem', color: 'var(--danger)', fontSize: '0.875rem', textAlign: 'center' }}>
                         {error}
+                    </p>
+                )}
+                {resetMessage && (
+                    <p style={{ marginTop: '0.75rem', color: 'var(--success)', fontSize: '0.875rem', textAlign: 'center' }}>
+                        {resetMessage}
                     </p>
                 )}
 
