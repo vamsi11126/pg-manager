@@ -105,7 +105,7 @@ const LoginPage = () => {
                 )}
 
                 <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Don't have an account? <Link to="/register" style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Register PG</Link>
+                    Admin access is invite-only. Please contact the system owner for an invite link.
                 </p>
                 <p style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                     Are you a tenant? <Link to="/tenant/login" style={{ color: 'var(--secondary)', cursor: 'pointer', textDecoration: 'underline' }}>Tenant Login</Link>

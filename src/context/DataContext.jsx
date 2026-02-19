@@ -280,37 +280,11 @@ export const DataProvider = ({ children }) => {
         }
     };
 
-    const register = async (ownerData) => {
-        const { email, password, name, phone, address } = ownerData;
-
-        // 1. Sign Up
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email,
-            password,
-        });
-
-        if (authError) return { success: false, message: authError.message };
-
-        if (authData.user) {
-            // 2. Create Profile
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        id: authData.user.id,
-                        email,
-                        full_name: name,
-                        role: 'admin' // Defaulting to admin for PG owners
-                    }
-                ]);
-
-            if (profileError) {
-                return { success: false, message: profileError.message };
-            }
-
-            return { success: true, message: 'Registration successful! Please login.' };
-        }
-        return { success: false, message: 'Registration failed.' };
+    const register = async () => {
+        return {
+            success: false,
+            message: 'Open registration is disabled. Ask the system owner for an invite link.'
+        };
     };
 
     const login = async (email, password) => {
@@ -685,6 +659,56 @@ export const DataProvider = ({ children }) => {
         return sessionData?.session?.access_token || '';
     };
 
+    const createAdminInvite = async (email) => {
+        const token = await getAccessToken();
+        const res = await fetch(`${getApiBaseUrl()}/admin-invites`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({ email: (email || '').trim().toLowerCase() })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data?.error || 'Failed to create admin invite');
+        }
+        return data;
+    };
+
+    const verifyAdminInvite = async (token) => {
+        const res = await fetch(`${getApiBaseUrl()}/admin-invites/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            return { success: false, message: data?.error || 'Invalid invite' };
+        }
+        return { success: true, invite: data?.invite || null };
+    };
+
+    const acceptAdminInvite = async ({ token, name, password }) => {
+        const res = await fetch(`${getApiBaseUrl()}/admin-invites/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token, name, password })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            return { success: false, message: data?.error || 'Failed to accept invite' };
+        }
+        return { success: true };
+    };
+
     const createTenantLogin = async (tenantId, password) => {
         const token = await getAccessToken();
         const res = await fetch(`${getApiBaseUrl()}/create-tenant-login`, {
@@ -997,7 +1021,8 @@ export const DataProvider = ({ children }) => {
             tenants, addTenant, updateTenant, deleteTenant,
             paymentRequests, addPaymentRequest, updatePaymentRequestStatus,
             addTenantPaymentRequest, updateTenantPassword, updateAdminPassword, sendPasswordResetEmail,
-            createTenantLogin, getGuardianForPg, assignGuardianForPg, removeGuardianForPg, getTenantSupportContact
+            createTenantLogin, getGuardianForPg, assignGuardianForPg, removeGuardianForPg, getTenantSupportContact,
+            createAdminInvite, verifyAdminInvite, acceptAdminInvite
         }}>
             {children}
         </DataContext.Provider>

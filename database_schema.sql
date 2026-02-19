@@ -186,6 +186,74 @@ CREATE POLICY "Public can read profiles"
   FOR SELECT
   USING (true);
 
+-- =====================================================
+-- ADMIN INVITES TABLE (INVITE-ONLY ADMIN ONBOARDING)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS admin_invites (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL,
+  invited_by UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  accepted_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE admin_invites ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can create invites" ON admin_invites;
+CREATE POLICY "Admins can create invites"
+  ON admin_invites
+  FOR INSERT
+  WITH CHECK (
+    invited_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can view own invites" ON admin_invites;
+CREATE POLICY "Admins can view own invites"
+  ON admin_invites
+  FOR SELECT
+  USING (
+    invited_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can revoke own invites" ON admin_invites;
+CREATE POLICY "Admins can revoke own invites"
+  ON admin_invites
+  FOR UPDATE
+  USING (
+    invited_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+  )
+  WITH CHECK (
+    invited_by = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+  );
+
+CREATE INDEX IF NOT EXISTS idx_admin_invites_email ON admin_invites (lower(email));
+CREATE INDEX IF NOT EXISTS idx_admin_invites_invited_by ON admin_invites (invited_by);
+CREATE INDEX IF NOT EXISTS idx_admin_invites_expires_at ON admin_invites (expires_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_invites_one_active_per_email
+  ON admin_invites (lower(email))
+  WHERE accepted_at IS NULL AND revoked_at IS NULL;
+
 -- Allow tenants to view their own profile and roommates in the same room
 DROP POLICY IF EXISTS "Tenants can view their own tenant record" ON tenants;
 CREATE POLICY "Tenants can view their own tenant record"
@@ -416,6 +484,7 @@ DROP TRIGGER IF EXISTS update_guardians_updated_at ON guardians;
 DROP TRIGGER IF EXISTS update_tenants_updated_at ON tenants;
 DROP TRIGGER IF EXISTS update_payment_requests_updated_at ON payment_requests;
 DROP TRIGGER IF EXISTS update_tenant_bills_updated_at ON tenant_bills;
+DROP TRIGGER IF EXISTS update_admin_invites_updated_at ON admin_invites;
 
 -- Trigger for pgs table
 CREATE TRIGGER update_pgs_updated_at
@@ -446,6 +515,26 @@ CREATE TRIGGER update_tenant_bills_updated_at
     BEFORE UPDATE ON tenant_bills
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for admin_invites table
+CREATE TRIGGER update_admin_invites_updated_at
+    BEFORE UPDATE ON admin_invites
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- BOOTSTRAP SINGLE SUPER ADMIN PROFILE (RUN MANUALLY)
+-- =====================================================
+-- 1) First create the auth user in Supabase Auth > Users
+-- 2) Then replace the email below and run this block
+INSERT INTO profiles (id, email, full_name, role)
+SELECT id, lower(email), 'Super Admin', 'admin'
+FROM auth.users
+WHERE lower(email) = lower('your_email@example.com')
+ON CONFLICT (id) DO UPDATE
+SET email = EXCLUDED.email,
+    full_name = EXCLUDED.full_name,
+    role = EXCLUDED.role;
 
 -- =====================================================
 -- VERIFICATION QUERIES (Optional - Run after creation)

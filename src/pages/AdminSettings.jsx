@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
-import { KeyRound, ArrowLeft } from 'lucide-react';
+import { KeyRound, ArrowLeft, Send } from 'lucide-react';
 
 const AdminSettings = () => {
-    const { user, updateAdminPassword } = useData();
+    const { user, updateAdminPassword, createAdminInvite } = useData();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteMessage, setInviteMessage] = useState('');
+    const [inviteError, setInviteError] = useState('');
+    const [inviteLoading, setInviteLoading] = useState(false);
 
     const validatePassword = (password) => {
         if (!password || password.length < 8) return 'Password must be at least 8 characters';
@@ -44,6 +48,33 @@ const AdminSettings = () => {
         setNewPassword('');
         setConfirmPassword('');
         setMessage('Password updated successfully.');
+    };
+
+    const handleInviteSubmit = async (e) => {
+        e.preventDefault();
+        setInviteMessage('');
+        setInviteError('');
+
+        const normalizedEmail = inviteEmail.trim().toLowerCase();
+        if (!normalizedEmail) {
+            setInviteError('Invite email is required');
+            return;
+        }
+        if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
+            setInviteError('Invite email is invalid');
+            return;
+        }
+
+        setInviteLoading(true);
+        try {
+            await createAdminInvite(normalizedEmail);
+            setInviteMessage('Admin invite sent successfully. Invite link expires in 24 hours.');
+            setInviteEmail('');
+        } catch (err) {
+            setInviteError(err?.message || 'Failed to send admin invite');
+        } finally {
+            setInviteLoading(false);
+        }
     };
 
     return (
@@ -89,6 +120,34 @@ const AdminSettings = () => {
 
                 {error && <p style={{ marginTop: '1rem', color: 'var(--danger)' }}>{error}</p>}
                 {message && <p style={{ marginTop: '1rem', color: 'var(--success)' }}>{message}</p>}
+
+                <hr style={{ margin: '2rem 0', borderColor: 'var(--border-glass)', opacity: 0.5 }} />
+
+                <h3 style={{ marginBottom: '0.75rem' }}>Invite New Admin</h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                    Only the configured super admin can send invites.
+                </p>
+
+                <form onSubmit={handleInviteSubmit}>
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Invitee Email</label>
+                        <input
+                            type="email"
+                            className="input-field"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="new-admin@example.com"
+                            required
+                        />
+                    </div>
+
+                    <button type="submit" className="btn btn-primary" disabled={inviteLoading}>
+                        <Send size={16} /> {inviteLoading ? 'Sending...' : 'Send Invite'}
+                    </button>
+                </form>
+
+                {inviteError && <p style={{ marginTop: '1rem', color: 'var(--danger)' }}>{inviteError}</p>}
+                {inviteMessage && <p style={{ marginTop: '1rem', color: 'var(--success)' }}>{inviteMessage}</p>}
             </div>
         </div>
     );

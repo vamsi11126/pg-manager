@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
@@ -16,7 +17,10 @@ const {
   SUPABASE_URL,
   SERVICE_ROLE_KEY,
   DEFAULT_TENANT_PASSWORD = 'Tenant@1234',
-  GUARDIAN_LOGIN_DOMAIN = 'guardian.pg-manager.local'
+  GUARDIAN_LOGIN_DOMAIN = 'guardian.pg-manager.local',
+  SUPER_ADMIN_EMAIL = '',
+  ADMIN_INVITE_URL = 'http://localhost:5173',
+  ADMIN_INVITE_EXPIRY_HOURS = '24'
 } = process.env;
 
 if (!SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
@@ -55,6 +59,21 @@ const validateStrongPassword = (password = '') => {
   if (!/[0-9]/.test(password)) return 'Password must include at least one number';
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'Password must include at least one symbol';
   return '';
+};
+
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
+const inviteTokenHash = (token = '') => crypto.createHash('sha256').update(token).digest('hex');
+const createInviteToken = () => crypto.randomBytes(32).toString('hex');
+const inviteExpiryHours = (() => {
+  const parsed = Number.parseInt(ADMIN_INVITE_EXPIRY_HOURS, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 24;
+  return parsed;
+})();
+
+const isSuperAdmin = (email = '') => {
+  const expected = normalizeEmail(SUPER_ADMIN_EMAIL || '');
+  if (!expected) return false;
+  return normalizeEmail(email) === expected;
 };
 
 const getRequester = async (req) => {
@@ -221,6 +240,40 @@ If anything looks incorrect, please contact your PG admin.
   await transporter.sendMail({
     from: SMTP_FROM,
     to: tenant.email,
+    subject,
+    html,
+    text
+  });
+};
+
+const sendAdminInviteEmail = async ({ inviteEmail, inviterEmail, inviteToken, expiresAt }) => {
+  const registerBase = ADMIN_INVITE_URL.replace(/\/$/, '');
+  const inviteLink = `${registerBase}/register?invite=${encodeURIComponent(inviteToken)}`;
+  const expiresText = new Date(expiresAt).toLocaleString();
+  const subject = `${APP_NAME} Admin Invite`;
+
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+      <h2 style="margin:0 0 8px 0;">${subject}</h2>
+      <p>You have been invited to join ${APP_NAME} as an admin.</p>
+      <p><strong>Invited by:</strong> ${inviterEmail}</p>
+      <p><strong>Invite expires:</strong> ${expiresText}</p>
+      <p><a href="${inviteLink}">Accept Admin Invite</a></p>
+      <p>If you were not expecting this invite, you can ignore this email.</p>
+    </div>
+  `;
+
+  const text = `You have been invited to join ${APP_NAME} as an admin.
+
+Invited by: ${inviterEmail}
+Invite expires: ${expiresText}
+Accept invite: ${inviteLink}
+
+If you were not expecting this invite, ignore this email.`;
+
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    to: inviteEmail,
     subject,
     html,
     text
@@ -574,7 +627,7 @@ app.delete('/guardian/:pgId', async (req, res) => {
 
     const { error } = await supabaseAdmin
       .from('guardians')
-      .update({ is_active: false })
+      .delete()
       .eq('id', existingGuardian.id);
 
     if (error) {
@@ -585,6 +638,247 @@ app.delete('/guardian/:pgId', async (req, res) => {
   } catch (err) {
     console.error('Guardian remove error:', err);
     return res.status(500).json({ error: 'Failed to remove guardian' });
+  }
+});
+
+app.post('/admin-invites', async (req, res) => {
+  try {
+    const auth = await getRequester(req);
+    if (auth.error) {
+      return res.status(auth.status || 401).json({ error: auth.error });
+    }
+    if (auth.profile.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can create invites' });
+    }
+    if (!isSuperAdmin(auth.profile.email)) {
+      return res.status(403).json({ error: 'Only SUPER_ADMIN_EMAIL can create admin invites' });
+    }
+
+    const inviteEmail = normalizeEmail(req.body?.email || '');
+    if (!inviteEmail) {
+      return res.status(400).json({ error: 'Invite email is required' });
+    }
+    if (!/\S+@\S+\.\S+/.test(inviteEmail)) {
+      return res.status(400).json({ error: 'Invite email is invalid' });
+    }
+
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .ilike('email', inviteEmail)
+      .eq('role', 'admin')
+      .maybeSingle();
+    if (existingProfile) {
+      return res.status(400).json({ error: 'An admin account already exists for this email' });
+    }
+
+    await supabaseAdmin
+      .from('admin_invites')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('email', inviteEmail)
+      .is('accepted_at', null)
+      .is('revoked_at', null)
+      .lt('expires_at', new Date().toISOString());
+
+    const { data: existingInvite } = await supabaseAdmin
+      .from('admin_invites')
+      .select('id')
+      .eq('email', inviteEmail)
+      .is('accepted_at', null)
+      .is('revoked_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (existingInvite) {
+      return res.status(400).json({ error: 'An active invite already exists for this email' });
+    }
+
+    const rawToken = createInviteToken();
+    const tokenHash = inviteTokenHash(rawToken);
+    const expiresAt = new Date(Date.now() + inviteExpiryHours * 60 * 60 * 1000).toISOString();
+
+    const { error: inviteInsertError } = await supabaseAdmin
+      .from('admin_invites')
+      .insert({
+        email: inviteEmail,
+        invited_by: auth.requester.id,
+        token_hash: tokenHash,
+        expires_at: expiresAt
+      });
+
+    if (inviteInsertError) {
+      return res.status(500).json({ error: inviteInsertError.message });
+    }
+
+    await sendAdminInviteEmail({
+      inviteEmail,
+      inviterEmail: auth.profile.email || 'admin',
+      inviteToken: rawToken,
+      expiresAt
+    });
+
+    return res.json({ success: true, expiresAt });
+  } catch (err) {
+    console.error('Create admin invite error:', err);
+    return res.status(500).json({ error: 'Failed to create admin invite' });
+  }
+});
+
+app.post('/admin-invites/verify', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Missing SUPABASE_URL or SERVICE_ROLE_KEY' });
+    }
+
+    const token = (req.body?.token || '').toString().trim();
+    if (!token) {
+      return res.status(400).json({ error: 'Invite token is required' });
+    }
+
+    const tokenHash = inviteTokenHash(token);
+    const { data: inviteRow, error } = await supabaseAdmin
+      .from('admin_invites')
+      .select('id,email,expires_at,accepted_at,revoked_at')
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
+
+    if (error || !inviteRow) {
+      return res.status(404).json({ error: 'Invalid invite link' });
+    }
+    if (inviteRow.revoked_at) {
+      return res.status(400).json({ error: 'Invite was revoked' });
+    }
+    if (inviteRow.accepted_at) {
+      return res.status(400).json({ error: 'Invite already used' });
+    }
+    if (new Date(inviteRow.expires_at).getTime() <= Date.now()) {
+      return res.status(400).json({ error: 'Invite expired' });
+    }
+
+    return res.json({
+      success: true,
+      invite: {
+        email: inviteRow.email,
+        expiresAt: inviteRow.expires_at
+      }
+    });
+  } catch (err) {
+    console.error('Verify admin invite error:', err);
+    return res.status(500).json({ error: 'Failed to verify invite' });
+  }
+});
+
+app.post('/admin-invites/accept', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Missing SUPABASE_URL or SERVICE_ROLE_KEY' });
+    }
+
+    const token = (req.body?.token || '').toString().trim();
+    const fullName = (req.body?.name || '').toString().trim();
+    const password = (req.body?.password || '').toString();
+
+    if (!token) return res.status(400).json({ error: 'Invite token is required' });
+    if (!fullName) return res.status(400).json({ error: 'Name is required' });
+
+    const passwordError = validateStrongPassword(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
+    }
+
+    const tokenHash = inviteTokenHash(token);
+    const { data: inviteRow, error: inviteError } = await supabaseAdmin
+      .from('admin_invites')
+      .select('id,email,expires_at,accepted_at,revoked_at')
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
+
+    if (inviteError || !inviteRow) {
+      return res.status(404).json({ error: 'Invalid invite link' });
+    }
+    if (inviteRow.revoked_at) {
+      return res.status(400).json({ error: 'Invite was revoked' });
+    }
+    if (inviteRow.accepted_at) {
+      return res.status(400).json({ error: 'Invite already used' });
+    }
+    if (new Date(inviteRow.expires_at).getTime() <= Date.now()) {
+      return res.status(400).json({ error: 'Invite expired' });
+    }
+
+    const inviteEmail = normalizeEmail(inviteRow.email);
+    const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: inviteEmail,
+      password,
+      email_confirm: true,
+      user_metadata: { role: 'admin', full_name: fullName }
+    });
+
+    if (createError || !created?.user?.id) {
+      return res.status(400).json({ error: createError?.message || 'Could not create admin user' });
+    }
+
+    const authUserId = created.user.id;
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: authUserId,
+        email: inviteEmail,
+        full_name: fullName,
+        role: 'admin'
+      });
+
+    if (profileError) {
+      return res.status(500).json({ error: profileError.message });
+    }
+
+    const { error: inviteUpdateError } = await supabaseAdmin
+      .from('admin_invites')
+      .update({ accepted_at: new Date().toISOString() })
+      .eq('id', inviteRow.id)
+      .is('accepted_at', null)
+      .is('revoked_at', null);
+
+    if (inviteUpdateError) {
+      return res.status(500).json({ error: inviteUpdateError.message });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Accept admin invite error:', err);
+    return res.status(500).json({ error: 'Failed to accept invite' });
+  }
+});
+
+app.delete('/admin-invites/:inviteId', async (req, res) => {
+  try {
+    const auth = await getRequester(req);
+    if (auth.error) {
+      return res.status(auth.status || 401).json({ error: auth.error });
+    }
+    if (auth.profile.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can revoke invites' });
+    }
+    if (!isSuperAdmin(auth.profile.email)) {
+      return res.status(403).json({ error: 'Only SUPER_ADMIN_EMAIL can revoke invites' });
+    }
+
+    const inviteId = req.params.inviteId;
+    const { error } = await supabaseAdmin
+      .from('admin_invites')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('id', inviteId)
+      .is('accepted_at', null)
+      .is('revoked_at', null);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Revoke admin invite error:', err);
+    return res.status(500).json({ error: 'Failed to revoke invite' });
   }
 });
 
