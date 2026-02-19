@@ -4,7 +4,7 @@ import { Plus, Wifi, Edit2, Trash2, Clock } from 'lucide-react';
 const WifiSection = ({ pg, setShowAddWifi, setShowEditWifi, handleDeleteWifi }) => {
     return (
         <div className="glass-card" style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="wifi-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h2 style={{ margin: 0 }}>WiFi Management</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Manage internet access details per floor</p>
@@ -14,7 +14,7 @@ const WifiSection = ({ pg, setShowAddWifi, setShowEditWifi, handleDeleteWifi }) 
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="wifi-card-grid">
                 {(!pg.wifiDetails || pg.wifiDetails.length === 0) ? (
                     <div style={{ gridColumn: 'span 3', textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
                         <Wifi size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />

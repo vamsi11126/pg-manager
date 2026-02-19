@@ -19,7 +19,7 @@ const FoodEditModal = ({
             background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 1000, padding: '1rem'
         }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '800px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="glass-card responsive-modal-card" style={{ maxWidth: '800px', padding: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ margin: 0 }}>Edit Food Settings</h2>
                     <button onClick={() => setShowEditFood(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -40,6 +40,7 @@ const FoodEditModal = ({
                 </div>
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Weekly Menu</h3>
+                    <div className="table-scroll-container">
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-glass)' }}>
@@ -66,6 +67,7 @@ const FoodEditModal = ({
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                     <button type="button" onClick={() => setShowEditFood(false)} className="btn btn-outline">Cancel</button>

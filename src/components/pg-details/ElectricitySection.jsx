@@ -15,7 +15,7 @@ const ElectricitySection = ({
 }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="glass-card electricity-settings-row" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Zap size={20} color="#f59e0b" /> Electricity Settings
@@ -24,7 +24,7 @@ const ElectricitySection = ({
                         Configure billing rate and manage meter readings
                     </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="electricity-rate-controls" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Rate per Unit (₹):</label>
                     <input
                         type="number"
@@ -45,7 +45,7 @@ const ElectricitySection = ({
                     <p style={{ color: 'var(--text-muted)' }}>There are no rooms to manage electricity bills for. Please add rooms in the "Rooms" tab first.</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+                <div className="electricity-cards-grid" style={{ display: 'grid', gap: '1.5rem' }}>
                     {getSequentialFloors().map(floor => {
                         const floorRooms = [];
                         pg.rooms?.forEach(cat => {

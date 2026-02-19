@@ -50,22 +50,11 @@ const AppContent = () => {
         <Routes>
           <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route
+        <Route
             path="*"
             element={(
-              <div style={{ display: 'flex', height: '100vh', padding: '1rem', gap: '1rem', alignItems: 'stretch' }}>
-                <aside className="glass-card" style={{
-                  width: isSidebarCollapsed ? '88px' : '260px',
-                  margin: 0,
-                  borderRadius: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: '1.5rem',
-                  position: 'sticky',
-                  top: 0,
-                  height: '100%',
-                  transition: 'width 0.25s ease'
-                }}>
+              <div className="app-shell">
+                <aside className="glass-card app-sidebar" style={{ width: isSidebarCollapsed ? '88px' : '260px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -76,7 +65,7 @@ const AppContent = () => {
                     <button
                       type="button"
                       onClick={() => setIsSidebarCollapsed(prev => !prev)}
-                      className="btn btn-outline tooltip-target"
+                      className="btn btn-outline tooltip-target sidebar-toggle-btn"
                       data-tooltip={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                       style={{ padding: '0.35rem', borderColor: 'var(--border-glass)', color: 'var(--text-muted)' }}
                     >
@@ -87,7 +76,7 @@ const AppContent = () => {
                   <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                     <Link
                       to="/"
-                      className="btn btn-primary tooltip-target"
+                      className="btn btn-primary tooltip-target nav-item-btn"
                       data-tooltip="Go to dashboard"
                       style={{ background: 'transparent', color: 'var(--text-main)', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
                     >
@@ -106,7 +95,7 @@ const AppContent = () => {
                     </div>
                     <button
                       onClick={logout}
-                      className="btn tooltip-target"
+                      className="btn tooltip-target nav-item-btn"
                       style={{ width: '100%', color: 'var(--danger)', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start', padding: '0.5rem' }}
                       data-tooltip="Logout from guardian account"
                     >
@@ -115,7 +104,7 @@ const AppContent = () => {
                   </div>
                 </aside>
 
-                <main style={{ flex: 1, margin: 0, padding: '1.5rem', height: '100%', overflowY: 'auto' }}>
+                <main className="app-main">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/pg/:id" element={<PGDetails />} />
@@ -155,20 +144,9 @@ const AppContent = () => {
         <Route
           path="*"
           element={(
-            <div style={{ display: 'flex', height: '100vh', padding: '1rem', gap: '1rem', alignItems: 'stretch' }}>
+            <div className="app-shell">
               {/* Sidebar */}
-              <aside className="glass-card" style={{
-                width: isSidebarCollapsed ? '88px' : '260px',
-                margin: 0,
-                borderRadius: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '1.5rem',
-                position: 'sticky',
-                top: 0,
-                height: '100%',
-                transition: 'width 0.25s ease'
-              }}>
+              <aside className="glass-card app-sidebar" style={{ width: isSidebarCollapsed ? '88px' : '260px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -179,7 +157,7 @@ const AppContent = () => {
                   <button
                     type="button"
                     onClick={() => setIsSidebarCollapsed(prev => !prev)}
-                    className="btn btn-outline tooltip-target"
+                    className="btn btn-outline tooltip-target sidebar-toggle-btn"
                     data-tooltip={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     style={{ padding: '0.35rem', borderColor: 'var(--border-glass)', color: 'var(--text-muted)' }}
                   >
@@ -190,7 +168,7 @@ const AppContent = () => {
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                   <Link
                     to="/"
-                    className="btn btn-primary tooltip-target"
+                    className="btn btn-primary tooltip-target nav-item-btn"
                     data-tooltip="Go to dashboard"
                     style={{ background: 'transparent', color: 'var(--text-main)', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
                   >
@@ -198,7 +176,7 @@ const AppContent = () => {
                   </Link>
                   <Link
                     to="/settings"
-                    className="btn btn-primary tooltip-target"
+                    className="btn btn-primary tooltip-target nav-item-btn"
                     data-tooltip="Update account settings"
                     style={{ background: 'transparent', color: 'var(--text-main)', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
                   >
@@ -218,7 +196,7 @@ const AppContent = () => {
                   </div>
                   <button
                     onClick={logout}
-                    className="btn tooltip-target"
+                    className="btn tooltip-target nav-item-btn"
                     style={{ width: '100%', color: 'var(--danger)', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start', padding: '0.5rem' }}
                     data-tooltip="Logout from owner account"
                   >
@@ -228,13 +206,7 @@ const AppContent = () => {
               </aside>
 
               {/* Main Content */}
-              <main style={{
-                flex: 1,
-                margin: 0,
-                padding: '1.5rem',
-                height: '100%',
-                overflowY: 'auto'
-              }}>
+              <main className="app-main">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/pg/:id" element={<PGDetails />} />

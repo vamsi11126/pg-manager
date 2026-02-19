@@ -43,8 +43,8 @@ const PgHeaderTabs = ({
                     </div>
                     <span style={{ fontWeight: 500 }}>Back to Dashboard</span>
                 </Link>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
+                <div className="pg-header-top">
+                    <div className="pg-header-title">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <h1 style={{ margin: 0 }}>{pg.name}</h1>
 
@@ -63,7 +63,7 @@ const PgHeaderTabs = ({
                             </a>
                         )}
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div className="pg-header-actions">
                         <button onClick={() => setShowEditPg(true)} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem' }} data-tooltip="Edit PG name, address, and map link">
                             <Edit2 size={18} /> Edit PG
                         </button>
@@ -108,7 +108,7 @@ const PgHeaderTabs = ({
                 </div>
             </header>
 
-            <div className="manage-tab-strip" style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap', overflow: 'visible' }}>
+            <div className="manage-tab-strip pg-tab-strip" style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap', overflow: 'visible' }}>
                 <button
                     onClick={() => setActiveTab('rooms')}
                     className={`btn manage-tab-btn tooltip-target ${activeTab === 'rooms' ? 'btn-primary' : 'btn-outline'}`}

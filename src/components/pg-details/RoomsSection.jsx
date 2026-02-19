@@ -42,7 +42,7 @@ const RoomsSection = ({ pg, tenants, setShowAddRoom, setShowEditRoom, handleDele
                     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
                 }).map(([floorName, floorRooms]) => (
                     <div key={floorName}>
-                        <div style={{
+                        <div className="rooms-floor-header" style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
@@ -62,8 +62,8 @@ const RoomsSection = ({ pg, tenants, setShowAddRoom, setShowEditRoom, handleDele
 
                                     return (
                                         <div key={num} className="glass-card tooltip-target" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} data-tooltip={`Room ${num}: ${category.type}, ₹${category.price} monthly`}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
+                                            <div className="rooms-card-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                <div className="rooms-card-top-left" style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
                                                     <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Room no: {num}</h3>
                                                     <div style={{ fontSize: '0.875rem', color: 'var(--secondary)', fontWeight: 600 }}>
                                                         {slotsLeft > 0 ? `(${slotsLeft} slot${slotsLeft > 1 ? 's' : ''} left)` : '(Full)'}

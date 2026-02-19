@@ -41,7 +41,7 @@ const Dashboard = () => {
 
     return (
         <div className="container" style={{ padding: 0 }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <header className="dashboard-header" style={{ marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ marginBottom: '0.25rem' }}>Property Overview</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Manage your buildings and check status</p>
@@ -112,7 +112,7 @@ const Dashboard = () => {
                                 <Map size={16} /> {pg.address}
                             </p>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="dashboard-meta-grid" style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px' }}>
                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Rooms</p>
                                     <p style={{ fontWeight: 600 }}>{pg.rooms?.length || 0} Categories</p>
@@ -123,7 +123,7 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                            <div className="dashboard-card-actions">
                                 <Link to={`/pg/${pg.id}`} className="btn btn-primary tooltip-target" style={{ fontSize: '0.875rem', textDecoration: 'none', justifyContent: 'center' }} data-tooltip="Open and manage PG details">
                                     Manage Details
                                 </Link>
@@ -146,7 +146,7 @@ const Dashboard = () => {
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000, padding: '1rem'
                 }}>
-                    <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+                    <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem' }}>
                         <h2>Add New Property</h2>
                         <form onSubmit={handleAddPg}>
                             <div style={{ marginBottom: '1rem' }}>

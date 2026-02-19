@@ -146,7 +146,7 @@ const TenantsPage = () => {
                 </div>
                 <span style={{ fontWeight: 500 }}>Back to Dashboard</span>
             </Link>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <header className="dashboard-header" style={{ marginBottom: '2rem' }}>
                 <div>
                     <h1>Pay Requests</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Manage and process tenant payment requests</p>
@@ -159,6 +159,7 @@ const TenantsPage = () => {
             </header>
 
             <div className="glass-card" style={{ overflow: 'hidden' }}>
+                <div className="table-scroll-container">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-glass)' }}>
@@ -240,6 +241,7 @@ const TenantsPage = () => {
                         )}
                     </tbody>
                 </table>
+                </div>
             </div>
 
             {/* Register Tenant Modal */}
@@ -249,7 +251,7 @@ const TenantsPage = () => {
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000, padding: '1rem'
                 }}>
-                    <div className="glass-card" style={{ width: '100%', maxWidth: '700px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="glass-card responsive-modal-card" style={{ maxWidth: '700px', padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0 }}>Register New Tenant</h2>
                             <button onClick={() => setShowAddTenant(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -398,7 +400,7 @@ const TenantsPage = () => {
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000, padding: '1rem'
                 }}>
-                    <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+                    <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                             <h2>Tenant Profile</h2>
                             <button onClick={() => setViewingTenant(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>

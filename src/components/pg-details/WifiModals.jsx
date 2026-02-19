@@ -20,7 +20,7 @@ const WifiModals = ({
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000, padding: '1rem'
                 }}>
-                    <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2>Add WiFi Details</h2>
                             <button onClick={() => setShowAddWifi(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -97,7 +97,7 @@ const WifiModals = ({
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000, padding: '1rem'
                 }}>
-                    <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2>Edit WiFi Details</h2>
                             <button onClick={() => setShowEditWifi(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>

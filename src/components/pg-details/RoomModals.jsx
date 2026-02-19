@@ -30,7 +30,7 @@ const RoomModals = ({
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000, padding: '1rem'
                 }}>
-                    <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem 1.5rem 2rem 2rem', maxHeight: '85vh', overflowY: 'auto' }}>
+                    <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem 1.5rem 2rem 2rem', maxHeight: '85vh' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0 }}>New Room Category</h2>
                             <button onClick={() => setShowAddRoom(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -203,7 +203,7 @@ const RoomModals = ({
                     background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000, padding: '1rem'
                 }}>
-                    <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem 1.5rem 2rem 2rem', maxHeight: '85vh', overflowY: 'auto' }}>
+                    <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem 1.5rem 2rem 2rem', maxHeight: '85vh' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                             <h2>Edit Room Category</h2>
                             <button onClick={() => setShowEditRoom(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>

@@ -19,6 +19,7 @@ const TenantsSection = ({
             <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border-glass)' }}>
                 <h3 style={{ margin: 0 }}>Active Tenants</h3>
             </div>
+            <div className="table-scroll-container">
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr style={{ textAlign: 'left', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-glass)' }}>
@@ -83,6 +84,7 @@ const TenantsSection = ({
                                             </span>
                                         </td>
                                         <td style={{ padding: '1.25rem' }}>
+                                            <div className="tenant-actions-group">
                                             <button
                                                 onClick={() => {
                                                     setShowEditTenant(tenant);
@@ -91,7 +93,7 @@ const TenantsSection = ({
                                                     setEditPhoneError('');
                                                 }}
                                                 className="btn btn-outline tooltip-target"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', marginRight: '0.5rem' }}
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
                                                 data-tooltip="Edit tenant details"
                                             >
                                                 <Edit2 size={14} />
@@ -116,11 +118,12 @@ const TenantsSection = ({
                                                     }
                                                 }}
                                                 className="btn btn-outline tooltip-target"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', marginLeft: '0.5rem' }}
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
                                                 data-tooltip="Create login and send welcome email"
                                             >
                                                 Create Login
                                             </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -128,6 +131,7 @@ const TenantsSection = ({
                     )}
                 </tbody>
             </table>
+            </div>
         </div>
     );
 };

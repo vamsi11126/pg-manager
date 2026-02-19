@@ -38,8 +38,8 @@ const LoginPage = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem' }}>
+        <div className="auth-page-shell">
+            <div className="glass-card auth-card" style={{ maxWidth: '400px' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
                     <div style={{ background: 'var(--primary)', padding: '1rem', borderRadius: '50%' }}>
                         <Shield size={32} color="white" />

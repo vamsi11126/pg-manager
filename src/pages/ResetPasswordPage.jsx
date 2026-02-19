@@ -47,8 +47,8 @@ const ResetPasswordPage = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '460px', padding: '2.5rem' }}>
+        <div className="auth-page-shell">
+            <div className="glass-card auth-card" style={{ maxWidth: '460px' }}>
                 <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Reset Admin Password</h2>
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                     Enter your new password below.

@@ -4,7 +4,7 @@ import { Edit2, Utensils } from 'lucide-react';
 const FoodSection = ({ pg, setShowEditFood }) => {
     return (
         <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{
+            <div className="food-header-row" style={{
                 padding: '1.5rem',
                 background: 'linear-gradient(to right, rgba(255,255,255,0.05), transparent)',
                 borderBottom: '1px solid var(--border-glass)',
@@ -24,7 +24,7 @@ const FoodSection = ({ pg, setShowEditFood }) => {
                     </div>
                     <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Weekly Food Menu</h3>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div className="food-header-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <div style={{
                         padding: '0.5rem 1rem',
                         background: 'rgba(0,0,0,0.2)',
@@ -43,7 +43,7 @@ const FoodSection = ({ pg, setShowEditFood }) => {
                 </div>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-scroll-container">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ background: 'rgba(0,0,0,0.2)' }}>

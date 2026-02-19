@@ -108,8 +108,8 @@ const RegisterPage = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2.5rem' }}>
+        <div className="auth-page-shell">
+            <div className="glass-card auth-card" style={{ maxWidth: '500px' }}>
                 <button
                     onClick={() => navigate('/login')}
                     className="btn btn-outline"

@@ -111,7 +111,7 @@ const TenantDashboard = () => {
 
     return (
         <div className="container" style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
                 <div>
                     <h1 style={{ margin: 0 }}>{tenantUser.name}</h1>
                     <p style={{ color: 'var(--text-muted)' }}>

@@ -19,6 +19,13 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
 body {
   background-color: var(--bg-deep);
   color: var(--text-main);
@@ -28,6 +35,7 @@ body {
     radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
     radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
   background-attachment: fixed;
+  overflow-x: hidden;
 }
 
 .app-loader-screen {
@@ -84,6 +92,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 2.5rem;
+  font-size: 0.95rem;
 }
 
 .btn-primary {
@@ -141,6 +151,7 @@ select.input-field option {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  width: 100%;
 }
 
 h1,
@@ -178,9 +189,150 @@ h3 {
   min-width: max-content;
 }
 
+.app-shell {
+  display: flex;
+  min-height: 100dvh;
+  padding: 1rem;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.app-sidebar {
+  margin: 0;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100dvh - 2rem);
+  transition: width 0.25s ease;
+}
+
+.app-main {
+  flex: 1;
+  margin: 0;
+  padding: 1.5rem;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-modal-card {
+  width: min(100%, 720px);
+  max-height: min(90vh, 860px);
+  overflow-y: auto;
+}
+
+.auth-page-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 2.5rem;
+}
+
 .manage-tab-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pg-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pg-header-title {
+  min-width: 0;
+}
+
+.pg-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.pg-tab-strip {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+
+.tenant-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.food-header-row,
+.wifi-header-row,
+.rooms-floor-header {
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.food-header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.wifi-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.electricity-cards-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.electricity-settings-row,
+.electricity-rate-controls {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rooms-card-top {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rooms-card-top-left {
+  min-width: 0;
 }
 
 .toast-stack {
@@ -327,10 +479,141 @@ h3 {
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+  }
+
+  .auth-card {
+    max-width: 100%;
+    padding: 1.5rem 1.25rem;
+  }
+
+  .table-scroll-container table {
+    min-width: 760px;
+  }
+
+  .dashboard-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-card-actions .btn {
+    width: 100%;
+  }
+
+  .pg-header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .pg-header-actions .btn {
+    width: 100%;
+  }
+
+  .food-header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .food-header-actions .btn {
+    width: 100%;
+  }
+
+  .pg-tab-strip .btn,
+  .tenant-actions-group .btn {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .wifi-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .electricity-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rooms-card-top-left h3 {
+    font-size: 1.1rem !important;
+  }
+
+  .responsive-modal-card {
+    padding: 1.25rem !important;
+    max-height: 88vh;
+  }
+
+  .manage-tab-strip {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
 
   .grid-cols-2,
   .grid-cols-3 {
     grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .app-shell {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .app-sidebar {
+    top: 0.75rem;
+    max-height: calc(100dvh - 1.5rem);
+  }
+
+  .app-main {
+    padding: 1rem;
+  }
+
+  .wifi-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .app-sidebar {
+    width: 100% !important;
+    position: static;
+    max-height: none;
+    padding: 1rem;
+    border-radius: 16px;
+    gap: 0.75rem;
+  }
+
+  .sidebar-toggle-btn {
+    display: none;
+  }
+
+  .nav-item-btn {
+    justify-content: flex-start !important;
+    width: 100%;
+  }
+
+  .app-main {
+    width: 100%;
+    padding: 0.25rem;
+    overflow: visible;
+  }
+
+  .pg-tab-strip {
+    padding-bottom: 0.25rem;
   }
 }
 

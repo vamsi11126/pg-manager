@@ -10,7 +10,7 @@ const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, han
             background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 1000, padding: '1rem'
         }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+            <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <h2>Edit PG Details</h2>
                     <button onClick={() => setShowEditPg(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
