@@ -12,7 +12,7 @@ const defaultFoodMenu = [
     { day: 'Wednesday', breakfast: 'Dosa, Chutney', lunch: 'Rice, Dal, Egg Curry', dinner: 'Roti, Paneer' },
     { day: 'Thursday', breakfast: 'Pongal, Chutney', lunch: 'Rice, Veg Mandi', dinner: 'Roti, Dal Tadka' },
     { day: 'Friday', breakfast: 'Upma, Chutney', lunch: 'Rice, Sambar, Fry', dinner: 'Roti, Veg Kadai' },
-    { day: 'Saturday', breakfast: 'Pancakes/Aloo Paratha', lunch: 'Veg Pulav', dinner: 'Special Dinner/Roti' },
+    { day: 'Saturday', breakfast: 'Pancakes/Aloo Paratha', lunch: 'Veg Pulav', dinner: 'Special Dinner/Roti' }
 ];
 
 const normalizePg = (dbPg) => ({
@@ -28,10 +28,20 @@ const normalizePg = (dbPg) => ({
     foodAmount: dbPg.food_amount ?? 0,
     mapLink: dbPg.map_link ?? '',
     landingQr: dbPg.landing_qr ?? '',
+    brochureUrl: dbPg.brochure_url ?? '',
+    brochureName: dbPg.brochure_name ?? '',
     facilities: dbPg.facilities ?? [],
     neighborhoodDetails: dbPg.neighborhood_details ?? '',
     galleryPhotos: dbPg.gallery_photos ?? []
 });
+
+const getApiBaseUrl = () => {
+    const explicitBase = import.meta.env.VITE_API_BASE_URL;
+    if (explicitBase) return explicitBase.replace(/\/$/, '');
+
+    const emailApi = import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email';
+    return emailApi.replace('/send-tenant-email', '').replace(/\/$/, '');
+};
 
 const PGLandingPage = () => {
     const { id } = useParams();
@@ -40,6 +50,9 @@ const PGLandingPage = () => {
     const [admin, setAdmin] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showVisitForm, setShowVisitForm] = useState(false);
+    const [visitForm, setVisitForm] = useState({ name: '', email: '', phone: '' });
+    const [visitStatus, setVisitStatus] = useState({ loading: false, message: '', isError: false });
 
     useEffect(() => {
         let mounted = true;
@@ -48,7 +61,7 @@ const PGLandingPage = () => {
             setLoading(true);
             setError('');
 
-            let currentPg = pgs.find(p => p.id === id) || null;
+            let currentPg = pgs.find((p) => p.id === id) || null;
 
             if (!currentPg) {
                 const { data, error: pgError } = await supabase
@@ -95,7 +108,9 @@ const PGLandingPage = () => {
         };
 
         load();
-        return () => { mounted = false; };
+        return () => {
+            mounted = false;
+        };
     }, [id, pgs, user?.id]);
 
     const { vacancyRows, totalSlots, vacantSlots } = useMemo(() => {
@@ -103,10 +118,10 @@ const PGLandingPage = () => {
         const rows = [];
         let slots = 0;
         let vacant = 0;
-        pg.rooms?.forEach(cat => {
-            const capacity = parseInt(cat.type) || 1;
-            (cat.roomNumbers || []).forEach(num => {
-                const occupied = tenants.filter(t => t.pgId === pg.id && t.roomNumber === num).length;
+        pg.rooms?.forEach((cat) => {
+            const capacity = parseInt(cat.type, 10) || 1;
+            (cat.roomNumbers || []).forEach((num) => {
+                const occupied = tenants.filter((t) => t.pgId === pg.id && t.roomNumber === num).length;
                 const available = Math.max(capacity - occupied, 0);
                 slots += capacity;
                 vacant += available;
@@ -125,7 +140,7 @@ const PGLandingPage = () => {
     const facilities = useMemo(() => {
         if (!pg) return [];
         if (Array.isArray(pg.facilities) && pg.facilities.length > 0) {
-            return pg.facilities.map(item => ({
+            return pg.facilities.map((item) => ({
                 label: item,
                 icon: Sparkles,
                 active: true,
@@ -135,8 +150,8 @@ const PGLandingPage = () => {
 
         const hasWifi = (pg.wifiDetails || []).length > 0;
         const hasFood = (pg.foodMenu || []).length > 0 || (pg.foodAmount || 0) > 0;
-        const hasAttachedBath = (pg.rooms || []).some(r => r.attachedBath);
-        const hasAC = (pg.rooms || []).some(r => r.isAC);
+        const hasAttachedBath = (pg.rooms || []).some((r) => r.attachedBath);
+        const hasAC = (pg.rooms || []).some((r) => r.isAC);
 
         return [
             { label: 'Hygienic Food', icon: Utensils, active: hasFood, desc: 'Daily cooked meals with flexible plan.' },
@@ -146,8 +161,51 @@ const PGLandingPage = () => {
         ];
     }, [pg]);
 
-    const menu = (pg?.foodMenu && pg.foodMenu.length > 0) ? pg.foodMenu : defaultFoodMenu;
+    const menu = pg?.foodMenu?.length > 0 ? pg.foodMenu : defaultFoodMenu;
     const gallery = Array.isArray(pg?.galleryPhotos) ? pg.galleryPhotos.slice(0, 5) : [];
+
+    const handleVisitSubmit = async (e) => {
+        e.preventDefault();
+        if (!pg?.id) return;
+
+        const payload = {
+            pgId: pg.id,
+            name: visitForm.name.trim(),
+            email: visitForm.email.trim().toLowerCase(),
+            phone: visitForm.phone.trim()
+        };
+
+        if (!payload.name || !payload.email || !payload.phone) {
+            setVisitStatus({ loading: false, message: 'All fields are required.', isError: true });
+            return;
+        }
+        if (!/\S+@\S+\.\S+/.test(payload.email)) {
+            setVisitStatus({ loading: false, message: 'Enter a valid email address.', isError: true });
+            return;
+        }
+        if (!/^\d{10}$/.test(payload.phone.replace(/\D/g, ''))) {
+            setVisitStatus({ loading: false, message: 'Phone number must be exactly 10 digits.', isError: true });
+            return;
+        }
+
+        setVisitStatus({ loading: true, message: '', isError: false });
+        try {
+            const res = await fetch(`${getApiBaseUrl()}/visit-requests`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setVisitStatus({ loading: false, message: data?.error || 'Failed to submit request.', isError: true });
+                return;
+            }
+            setVisitStatus({ loading: false, message: 'Visit request sent successfully. Admin will contact you soon.', isError: false });
+            setVisitForm({ name: '', email: '', phone: '' });
+        } catch {
+            setVisitStatus({ loading: false, message: 'Could not submit request. Please try again.', isError: true });
+        }
+    };
 
     if (loading) {
         return (
@@ -192,8 +250,16 @@ const PGLandingPage = () => {
                             Everything you need, right where you want to be.
                         </p>
                         <div className="lp-hero-actions">
-                            <button className="lp-btn lp-btn-primary">Book a Visit</button>
-                            <button className="lp-btn lp-btn-ghost">Download Brochure</button>
+                            <button className="lp-btn lp-btn-primary" onClick={() => setShowVisitForm(true)}>Book a Visit</button>
+                            {pg.brochureUrl ? (
+                                <a className="lp-btn lp-btn-ghost" href={pg.brochureUrl} download={pg.brochureName || `${pg.name}-brochure.pdf`}>
+                                    Download Brochure
+                                </a>
+                            ) : (
+                                <button className="lp-btn lp-btn-ghost" disabled style={{ opacity: 0.65, cursor: 'not-allowed' }}>
+                                    Brochure Coming Soon
+                                </button>
+                            )}
                         </div>
                     </div>
                     <div className="lp-hero-visual">
@@ -201,7 +267,7 @@ const PGLandingPage = () => {
                         <div className="lp-hero-metrics">
                             <div className="lp-metric">
                                 <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Total Slots</span>
-                                <strong style={{ fontSize: '1.6rem' }}>{totalSlots || '—'}</strong>
+                                <strong style={{ fontSize: '1.6rem' }}>{totalSlots || '-'}</strong>
                             </div>
                             <div className="lp-metric">
                                 <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Vacant Slots</span>
@@ -209,7 +275,7 @@ const PGLandingPage = () => {
                             </div>
                             <div className="lp-metric">
                                 <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>Food Plan</span>
-                                <strong style={{ fontSize: '1.2rem' }}>{pg.foodAmount ? `₹${pg.foodAmount}/month` : 'On request'}</strong>
+                                <strong style={{ fontSize: '1.2rem' }}>{pg.foodAmount ? `Rs.${pg.foodAmount}/month` : 'On request'}</strong>
                             </div>
                         </div>
                     </div>
@@ -224,11 +290,11 @@ const PGLandingPage = () => {
                                 <p>Contact us for the latest vacancy details.</p>
                             </div>
                         ) : (
-                            vacancyRows.slice(0, 10).map(room => (
+                            vacancyRows.slice(0, 10).map((room) => (
                                 <div className="lp-card lp-scroll-card" key={room.number}>
                                     <span className="lp-badge">{room.available > 0 ? `${room.available} Slots Left` : 'Waitlist'}</span>
                                     <h3 style={{ marginTop: '0.75rem' }}>Room {room.number}</h3>
-                                    <p style={{ color: 'var(--lp-ink-muted)' }}>{room.type} • Capacity {room.capacity}</p>
+                                    <p style={{ color: 'var(--lp-ink-muted)' }}>{room.type} - Capacity {room.capacity}</p>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem' }}>
                                         <BedDouble size={16} /> <span>{room.available > 0 ? 'Ready to move' : 'Fully occupied'}</span>
                                     </div>
@@ -247,7 +313,7 @@ const PGLandingPage = () => {
                                 <p>Photos will be updated by the PG owner.</p>
                             </div>
                         ) : (
-                            gallery.map(photo => (
+                            gallery.map((photo) => (
                                 <div className="lp-card lp-scroll-card lp-image-card" key={photo.id || photo.url}>
                                     <img src={photo.url} alt={photo.name || 'PG gallery'} />
                                 </div>
@@ -259,7 +325,7 @@ const PGLandingPage = () => {
                 <section className="lp-section">
                     <h2 className="lp-section-title">Facilities</h2>
                     <div className="lp-grid">
-                        {facilities.map(item => (
+                        {facilities.map((item) => (
                             <div className="lp-card" key={item.label}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
                                     <item.icon size={20} color={item.active ? '#0f766e' : '#94a3b8'} />
@@ -284,7 +350,7 @@ const PGLandingPage = () => {
                                 <div>Lunch</div>
                                 <div>Dinner</div>
                             </div>
-                            {menu.map(day => (
+                            {menu.map((day) => (
                                 <div className="lp-food-row" key={day.day}>
                                     <div style={{ fontWeight: 600 }}>{day.day}</div>
                                     <div>{day.breakfast}</div>
@@ -344,16 +410,83 @@ const PGLandingPage = () => {
                             <span>{admin?.phone || 'Available on request'}</span>
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                            <button className="lp-btn lp-btn-primary"><Phone size={16} /> Request Call Back</button>
+                            <button className="lp-btn lp-btn-primary" onClick={() => setShowVisitForm(true)}>
+                                <Phone size={16} /> Request Call Back
+                            </button>
                             <button className="lp-btn lp-btn-ghost"><Mail size={16} /> Email Us</button>
                         </div>
                     </div>
                 </section>
 
                 <div className="lp-footer">
-                    Crafted for {pg.name} • Your next home away from home
+                    Crafted for {pg.name} - Your next home away from home
                 </div>
             </div>
+
+            {showVisitForm && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '1rem',
+                    zIndex: 1000
+                }}>
+                    <div className="lp-card" style={{ width: '100%', maxWidth: '480px' }}>
+                        <h3 style={{ marginTop: 0 }}>Book a Visit</h3>
+                        <p style={{ color: 'var(--lp-ink-muted)' }}>Share your details. Admin will contact you shortly.</p>
+                        <form onSubmit={handleVisitSubmit}>
+                            <div style={{ marginBottom: '0.9rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.35rem' }}>Name</label>
+                                <input
+                                    className="input-field"
+                                    value={visitForm.name}
+                                    onChange={(e) => setVisitForm((prev) => ({ ...prev, name: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <div style={{ marginBottom: '0.9rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.35rem' }}>Email</label>
+                                <input
+                                    type="email"
+                                    className="input-field"
+                                    value={visitForm.email}
+                                    onChange={(e) => setVisitForm((prev) => ({ ...prev, email: e.target.value }))}
+                                    required
+                                />
+                            </div>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.35rem' }}>Phone Number</label>
+                                <input
+                                    type="tel"
+                                    className="input-field"
+                                    value={visitForm.phone}
+                                    onChange={(e) => {
+                                        const next = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                        setVisitForm((prev) => ({ ...prev, phone: next }));
+                                    }}
+                                    required
+                                />
+                            </div>
+                            {visitStatus.message && (
+                                <p style={{ color: visitStatus.isError ? '#b91c1c' : '#0f766e', marginBottom: '0.85rem' }}>
+                                    {visitStatus.message}
+                                </p>
+                            )}
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                                <button type="button" className="lp-btn lp-btn-ghost" onClick={() => setShowVisitForm(false)}>
+                                    Close
+                                </button>
+                                <button type="submit" className="lp-btn lp-btn-primary" disabled={visitStatus.loading}>
+                                    {visitStatus.loading ? 'Sending...' : 'Submit Request'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

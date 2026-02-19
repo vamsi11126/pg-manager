@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS pgs (
   food_amount NUMERIC DEFAULT 0,
   map_link TEXT DEFAULT '',
   landing_qr TEXT DEFAULT '',
+  brochure_url TEXT DEFAULT '',
+  brochure_name TEXT DEFAULT '',
   facilities JSONB DEFAULT '[]'::jsonb,
   neighborhood_details TEXT DEFAULT '',
   gallery_photos JSONB DEFAULT '[]'::jsonb,
@@ -118,6 +120,12 @@ ADD COLUMN IF NOT EXISTS map_link TEXT DEFAULT '';
 
 ALTER TABLE pgs
 ADD COLUMN IF NOT EXISTS landing_qr TEXT DEFAULT '';
+
+ALTER TABLE pgs
+ADD COLUMN IF NOT EXISTS brochure_url TEXT DEFAULT '';
+
+ALTER TABLE pgs
+ADD COLUMN IF NOT EXISTS brochure_name TEXT DEFAULT '';
 
 -- =====================================================
 -- TENANTS TABLE
@@ -298,6 +306,32 @@ CREATE POLICY "Tenants can view roommates"
   ON tenants
   FOR SELECT
   USING (tenant_can_view_row(pg_id, room_number));
+
+-- =====================================================
+-- VISIT REQUESTS TABLE (LEADS FROM LANDING PAGE)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS visit_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  pg_id UUID REFERENCES pgs(id) ON DELETE CASCADE NOT NULL,
+  admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  visitor_name TEXT NOT NULL,
+  visitor_email TEXT NOT NULL,
+  visitor_phone TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE visit_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can manage their own visit requests" ON visit_requests;
+CREATE POLICY "Admins can manage their own visit requests"
+  ON visit_requests
+  FOR ALL
+  USING (admin_id = auth.uid());
+
+CREATE INDEX IF NOT EXISTS idx_visit_requests_admin_id ON visit_requests(admin_id);
+CREATE INDEX IF NOT EXISTS idx_visit_requests_pg_id ON visit_requests(pg_id);
+CREATE INDEX IF NOT EXISTS idx_visit_requests_visitor_email ON visit_requests(lower(visitor_email));
 
 -- =====================================================
 -- PAYMENT REQUESTS TABLE
@@ -484,6 +518,7 @@ DROP TRIGGER IF EXISTS update_guardians_updated_at ON guardians;
 DROP TRIGGER IF EXISTS update_tenants_updated_at ON tenants;
 DROP TRIGGER IF EXISTS update_payment_requests_updated_at ON payment_requests;
 DROP TRIGGER IF EXISTS update_tenant_bills_updated_at ON tenant_bills;
+DROP TRIGGER IF EXISTS update_visit_requests_updated_at ON visit_requests;
 DROP TRIGGER IF EXISTS update_admin_invites_updated_at ON admin_invites;
 
 -- Trigger for pgs table
@@ -513,6 +548,12 @@ CREATE TRIGGER update_payment_requests_updated_at
 -- Trigger for tenant_bills table
 CREATE TRIGGER update_tenant_bills_updated_at
     BEFORE UPDATE ON tenant_bills
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for visit_requests table
+CREATE TRIGGER update_visit_requests_updated_at
+    BEFORE UPDATE ON visit_requests
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

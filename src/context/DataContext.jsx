@@ -32,6 +32,8 @@ export const DataProvider = ({ children }) => {
         foodAmount: dbPg.food_amount ?? 0,
         mapLink: dbPg.map_link ?? '',
         landingQr: dbPg.landing_qr ?? '',
+        brochureUrl: dbPg.brochure_url ?? '',
+        brochureName: dbPg.brochure_name ?? '',
         facilities: dbPg.facilities ?? [],
         neighborhoodDetails: dbPg.neighborhood_details ?? '',
         galleryPhotos: dbPg.gallery_photos ?? [],
@@ -51,6 +53,8 @@ export const DataProvider = ({ children }) => {
         food_amount: pg.foodAmount ?? pg.food_amount ?? 0,
         map_link: pg.mapLink ?? pg.map_link ?? '',
         landing_qr: pg.landingQr ?? pg.landing_qr ?? '',
+        brochure_url: pg.brochureUrl ?? pg.brochure_url ?? '',
+        brochure_name: pg.brochureName ?? pg.brochure_name ?? '',
         facilities: pg.facilities ?? [],
         neighborhood_details: pg.neighborhoodDetails ?? pg.neighborhood_details ?? '',
         gallery_photos: pg.galleryPhotos ?? pg.gallery_photos ?? []

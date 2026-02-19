@@ -284,6 +284,45 @@ If you were not expecting this invite, ignore this email.`;
   });
 };
 
+const sendVisitRequestEmail = async ({ adminEmail, adminName, pgName, pgAddress, visitorName, visitorEmail, visitorPhone }) => {
+  if (!adminEmail) return;
+
+  const subject = `${APP_NAME} New Visit Request - ${pgName}`;
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+      <h2 style="margin:0 0 8px 0;">${subject}</h2>
+      <p>Hi ${adminName || 'Admin'},</p>
+      <p>You received a new visit request from your landing page.</p>
+      <ul style="padding-left:16px;margin:8px 0;">
+        <li><strong>PG:</strong> ${pgName}</li>
+        <li><strong>Address:</strong> ${pgAddress || '-'}</li>
+        <li><strong>Name:</strong> ${visitorName}</li>
+        <li><strong>Email:</strong> ${visitorEmail}</li>
+        <li><strong>Phone:</strong> ${visitorPhone}</li>
+      </ul>
+      <p>Please contact the visitor to schedule a visit.</p>
+    </div>
+  `;
+
+  const text = `New visit request received.
+
+PG: ${pgName}
+Address: ${pgAddress || '-'}
+Visitor Name: ${visitorName}
+Visitor Email: ${visitorEmail}
+Visitor Phone: ${visitorPhone}
+
+Please contact the visitor to schedule a visit.`;
+
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    to: adminEmail,
+    subject,
+    html,
+    text
+  });
+};
+
 app.post('/send-tenant-email', async (req, res) => {
   try {
     const { tenant, pg, action, newPassword, defaultPassword, changes } = req.body || {};
@@ -619,6 +658,77 @@ app.get('/tenant-support-contact', async (req, res) => {
   } catch (err) {
     console.error('Tenant support contact lookup error:', err);
     return res.status(500).json({ error: 'Failed to fetch support contact' });
+  }
+});
+
+app.post('/visit-requests', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Missing SUPABASE_URL or SERVICE_ROLE_KEY' });
+    }
+
+    const pgId = (req.body?.pgId || '').toString().trim();
+    const visitorName = (req.body?.name || '').toString().trim();
+    const visitorEmail = normalizeEmail((req.body?.email || '').toString());
+    const visitorPhone = (req.body?.phone || '').toString().trim();
+
+    if (!pgId) return res.status(400).json({ error: 'pgId is required' });
+    if (!visitorName) return res.status(400).json({ error: 'Name is required' });
+    if (!visitorEmail || !/\S+@\S+\.\S+/.test(visitorEmail)) {
+      return res.status(400).json({ error: 'Valid email is required' });
+    }
+    if (!/^\d{10}$/.test(visitorPhone.replace(/\D/g, ''))) {
+      return res.status(400).json({ error: 'Phone number must be exactly 10 digits' });
+    }
+
+    const { data: pgRow, error: pgError } = await supabaseAdmin
+      .from('pgs')
+      .select('id,admin_id,name,address')
+      .eq('id', pgId)
+      .maybeSingle();
+
+    if (pgError || !pgRow) {
+      return res.status(404).json({ error: 'PG not found' });
+    }
+
+    const { error: insertError } = await supabaseAdmin
+      .from('visit_requests')
+      .insert({
+        pg_id: pgRow.id,
+        admin_id: pgRow.admin_id,
+        visitor_name: visitorName,
+        visitor_email: visitorEmail,
+        visitor_phone: visitorPhone.replace(/\D/g, '')
+      });
+
+    if (insertError) {
+      return res.status(500).json({ error: insertError.message });
+    }
+
+    const { data: adminProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('email,full_name')
+      .eq('id', pgRow.admin_id)
+      .maybeSingle();
+
+    try {
+      await sendVisitRequestEmail({
+        adminEmail: adminProfile?.email || '',
+        adminName: adminProfile?.full_name || 'Admin',
+        pgName: pgRow.name,
+        pgAddress: pgRow.address,
+        visitorName,
+        visitorEmail,
+        visitorPhone: visitorPhone.replace(/\D/g, '')
+      });
+    } catch (mailErr) {
+      console.error('Visit request email send error:', mailErr);
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Visit request create error:', err);
+    return res.status(500).json({ error: 'Failed to submit visit request' });
   }
 });
 

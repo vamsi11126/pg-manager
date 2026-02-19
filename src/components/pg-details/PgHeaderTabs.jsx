@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Bed, Edit2, LayoutGrid, Plus, ShieldCheck, Sparkles, Trash2, UserPlus, Utensils, Wifi, Zap } from 'lucide-react';
+import { ArrowLeft, Bed, Download, Edit2, LayoutGrid, Plus, ShieldCheck, Sparkles, Trash2, Upload, UserPlus, Utensils, Wifi, Zap } from 'lucide-react';
 
 const PgHeaderTabs = ({
     pg,
@@ -10,7 +10,10 @@ const PgHeaderTabs = ({
     handleDeletePg,
     setShowAddRoom,
     setShowAddTenant,
-    canDeletePg = true
+    canDeletePg = true,
+    handleUploadBrochure,
+    handleDownloadBrochure,
+    brochureName
 }) => {
     return (
         <>
@@ -63,6 +66,17 @@ const PgHeaderTabs = ({
                     <div style={{ display: 'flex', gap: '0.75rem' }}>
                         <button onClick={() => setShowEditPg(true)} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem' }} data-tooltip="Edit PG name, address, and map link">
                             <Edit2 size={18} /> Edit PG
+                        </button>
+                        <button onClick={handleUploadBrochure} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem' }} data-tooltip="Upload brochure PDF for landing page">
+                            <Upload size={18} /> Upload Brochure
+                        </button>
+                        <button
+                            onClick={handleDownloadBrochure}
+                            className={`btn btn-outline tooltip-target ${brochureName ? '' : 'btn-disabled'}`}
+                            style={{ fontSize: '0.875rem', opacity: brochureName ? 1 : 0.5, pointerEvents: brochureName ? 'auto' : 'none' }}
+                            data-tooltip={brochureName ? `Download current brochure (${brochureName})` : 'Upload brochure first'}
+                        >
+                            <Download size={18} /> Download Brochure
                         </button>
                         {canDeletePg && (
                             <button onClick={handleDeletePg} className="btn btn-outline tooltip-target" style={{ fontSize: '0.875rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} data-tooltip="Delete this PG and its related data">

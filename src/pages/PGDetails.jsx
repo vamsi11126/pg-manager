@@ -39,6 +39,7 @@ const PGDetails = () => {
     const [editAadharError, setEditAadharError] = useState('');
     const [editPhoneError, setEditPhoneError] = useState('');
     const roomPhotosInputRef = useRef(null);
+    const brochureInputRef = useRef(null);
 
     const [newTenant, setNewTenant] = useState({
         name: '',
@@ -423,6 +424,38 @@ const PGDetails = () => {
         updatePg(updatedPg, { successMessage: 'WiFi details deleted successfully.' });
     };
 
+    const handleUploadBrochureClick = () => {
+        brochureInputRef.current?.click();
+    };
+
+    const handleBrochureSelected = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            alert('Please upload a PDF brochure.');
+            e.target.value = '';
+            return;
+        }
+
+        const dataUrl = await readFileAsDataUrl(file);
+        await updatePg(
+            { ...pg, brochureUrl: dataUrl, brochureName: file.name },
+            { successMessage: 'Brochure uploaded successfully.' }
+        );
+        e.target.value = '';
+    };
+
+    const handleDownloadBrochure = () => {
+        if (!pg?.brochureUrl) return;
+        const link = document.createElement('a');
+        link.href = pg.brochureUrl;
+        link.download = pg.brochureName || `${pg.name || 'pg'}-brochure.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleEditWifi = (wifiToUpdate) => {
         const updatedPg = {
             ...pg,
@@ -594,6 +627,16 @@ const PGDetails = () => {
                 setShowAddRoom={setShowAddRoom}
                 setShowAddTenant={setShowAddTenant}
                 canDeletePg={authRole === 'admin'}
+                handleUploadBrochure={handleUploadBrochureClick}
+                handleDownloadBrochure={handleDownloadBrochure}
+                brochureName={pg.brochureName}
+            />
+            <input
+                ref={brochureInputRef}
+                type="file"
+                accept="application/pdf"
+                style={{ display: 'none' }}
+                onChange={handleBrochureSelected}
             />
 
             {activeTab === 'rooms' && (
