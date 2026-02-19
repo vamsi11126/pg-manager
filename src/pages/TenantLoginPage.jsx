@@ -4,11 +4,10 @@ import { LogIn, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const TenantLoginPage = () => {
-    const { loginAsTenant, getTenantSupportContact } = useData();
+    const { loginAsTenant } = useData();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [guardianContact, setGuardianContact] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -16,21 +15,6 @@ const TenantLoginPage = () => {
         const res = await loginAsTenant(email, password);
         if (!res?.success) {
             setError(res?.message || 'Login failed');
-        }
-    };
-
-    const handleEmailBlur = async () => {
-        const trimmedEmail = email.trim();
-        if (!trimmedEmail || !/\S+@\S+\.\S+/.test(trimmedEmail)) {
-            setGuardianContact(null);
-            return;
-        }
-
-        try {
-            const contact = await getTenantSupportContact(trimmedEmail);
-            setGuardianContact(contact);
-        } catch {
-            setGuardianContact(null);
         }
     };
 
@@ -56,7 +40,6 @@ const TenantLoginPage = () => {
                             placeholder="tenant@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            onBlur={handleEmailBlur}
                             required
                         />
                     </div>
@@ -81,12 +64,6 @@ const TenantLoginPage = () => {
                         {error}
                     </p>
                 )}
-                {guardianContact && (
-                    <p style={{ marginTop: '0.75rem', color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center' }}>
-                        Assigned Guardian: <strong>{guardianContact.name}</strong> ({guardianContact.phone})
-                    </p>
-                )}
-
                 <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                     Are you an owner? <Link to="/login" style={{ color: 'var(--secondary)', textDecoration: 'underline' }}>Owner Login</Link>
                 </p>

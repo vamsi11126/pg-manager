@@ -61,7 +61,11 @@ const validateStrongPassword = (password = '') => {
   return '';
 };
 
-const normalizeEmail = (email = '') => email.trim().toLowerCase();
+const normalizeEmail = (email = '') => {
+  const trimmed = email.trim();
+  const unquoted = trimmed.replace(/^["']+|["']+$/g, '');
+  return unquoted.trim().toLowerCase();
+};
 const inviteTokenHash = (token = '') => crypto.createHash('sha256').update(token).digest('hex');
 const createInviteToken = () => crypto.randomBytes(32).toString('hex');
 const inviteExpiryHours = (() => {
@@ -561,16 +565,36 @@ app.get('/tenant-support-contact', async (req, res) => {
       return res.status(500).json({ error: 'Missing SUPABASE_URL or SERVICE_ROLE_KEY' });
     }
 
-    const email = (req.query.email || '').toString().trim().toLowerCase();
-    if (!email) return res.status(400).json({ error: 'email is required' });
+    const normalizedEmail = (req.query.email || '').toString().trim().toLowerCase();
+    if (!normalizedEmail) return res.status(400).json({ error: 'email is required' });
 
-    const { data: tenantRow, error: tenantError } = await supabaseAdmin
+    let tenantRow = null;
+    const { data: tenantExact, error: tenantError } = await supabaseAdmin
       .from('tenants')
       .select('id,pg_id,email')
-      .ilike('email', email)
+      .ilike('email', normalizedEmail)
       .maybeSingle();
 
-    if (tenantError || !tenantRow) {
+    if (tenantError) {
+      return res.json({ success: true, guardian: null });
+    }
+    tenantRow = tenantExact || null;
+
+    if (!tenantRow) {
+      const { data: tenantCandidates, error: tenantCandidatesError } = await supabaseAdmin
+        .from('tenants')
+        .select('id,pg_id,email')
+        .ilike('email', `%${normalizedEmail}%`)
+        .limit(20);
+
+      if (!tenantCandidatesError && Array.isArray(tenantCandidates)) {
+        tenantRow = tenantCandidates.find(
+          (t) => (t.email || '').toString().trim().toLowerCase() === normalizedEmail
+        ) || null;
+      }
+    }
+
+    if (!tenantRow) {
       return res.json({ success: true, guardian: null });
     }
 
@@ -578,7 +602,7 @@ app.get('/tenant-support-contact', async (req, res) => {
       .from('guardians')
       .select('guardian_name,phone,is_active')
       .eq('pg_id', tenantRow.pg_id)
-      .eq('is_active', true)
+      .or('is_active.eq.true,is_active.is.null')
       .maybeSingle();
 
     if (guardianError || !guardianRow) {
@@ -650,7 +674,8 @@ app.post('/admin-invites', async (req, res) => {
     if (auth.profile.role !== 'admin') {
       return res.status(403).json({ error: 'Only admins can create invites' });
     }
-    if (!isSuperAdmin(auth.profile.email)) {
+    const requesterEmail = auth.requester?.email || auth.profile?.email || '';
+    if (!isSuperAdmin(requesterEmail)) {
       return res.status(403).json({ error: 'Only SUPER_ADMIN_EMAIL can create admin invites' });
     }
 
@@ -712,7 +737,7 @@ app.post('/admin-invites', async (req, res) => {
 
     await sendAdminInviteEmail({
       inviteEmail,
-      inviterEmail: auth.profile.email || 'admin',
+      inviterEmail: requesterEmail || 'admin',
       inviteToken: rawToken,
       expiresAt
     });
@@ -859,7 +884,8 @@ app.delete('/admin-invites/:inviteId', async (req, res) => {
     if (auth.profile.role !== 'admin') {
       return res.status(403).json({ error: 'Only admins can revoke invites' });
     }
-    if (!isSuperAdmin(auth.profile.email)) {
+    const requesterEmail = auth.requester?.email || auth.profile?.email || '';
+    if (!isSuperAdmin(requesterEmail)) {
       return res.status(403).json({ error: 'Only SUPER_ADMIN_EMAIL can revoke invites' });
     }
 

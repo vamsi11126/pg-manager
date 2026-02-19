@@ -1,21 +1,41 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useData } from '../context/DataContext';
 import { IndianRupee, Phone, CheckCircle2, Clock, LogOut, KeyRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const TenantDashboard = () => {
-    const { tenantUser, tenantPg, tenantRoommates, tenantPaymentRequests, addTenantPaymentRequest, updateTenantPassword, logout } = useData();
+    const { tenantUser, tenantPg, tenantRoommates, tenantPaymentRequests, addTenantPaymentRequest, updateTenantPassword, getTenantSupportContact, logout } = useData();
     const [ticketType, setTicketType] = useState('Rent');
     const [ticketAmount, setTicketAmount] = useState('');
     const [ticketNote, setTicketNote] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [message, setMessage] = useState('');
+    const [guardianContact, setGuardianContact] = useState(null);
 
     const monthLabel = useMemo(() => {
         const now = new Date();
         return now.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
     }, []);
+
+    useEffect(() => {
+        const loadGuardianContact = async () => {
+            const email = (tenantUser?.email || '').trim();
+            if (!email) {
+                setGuardianContact(null);
+                return;
+            }
+
+            try {
+                const contact = await getTenantSupportContact(email);
+                setGuardianContact(contact);
+            } catch {
+                setGuardianContact(null);
+            }
+        };
+
+        loadGuardianContact();
+    }, [tenantUser?.email, getTenantSupportContact]);
 
     if (!tenantUser) {
         return (
@@ -106,6 +126,14 @@ const TenantDashboard = () => {
             {message && (
                 <div className="glass-card" style={{ padding: '0.75rem 1rem', marginBottom: '1.5rem' }}>
                     {message}
+                </div>
+            )}
+
+            {guardianContact && (
+                <div className="glass-card" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+                    <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                        Assigned Guardian: <strong style={{ color: 'var(--text-main)' }}>{guardianContact.name}</strong> ({guardianContact.phone})
+                    </p>
                 </div>
             )}
 
