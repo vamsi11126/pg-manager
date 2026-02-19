@@ -6,6 +6,7 @@
     { "source": "/tenant-support-contact", "destination": "/api/index" },
     { "source": "/visit-requests", "destination": "/api/index" },
     { "source": "/guardian/:path*", "destination": "/api/index" },
-    { "source": "/admin-invites/:path*", "destination": "/api/index" }
+    { "source": "/admin-invites/:path*", "destination": "/api/index" },
+    { "source": "/((?!api|assets|vite.svg|favicon.ico).*)", "destination": "/index.html" }
   ]
 }
