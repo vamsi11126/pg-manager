@@ -39,8 +39,16 @@ const getApiBaseUrl = () => {
     const explicitBase = import.meta.env.VITE_API_BASE_URL;
     if (explicitBase) return explicitBase.replace(/\/$/, '');
 
-    const emailApi = import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email';
-    return emailApi.replace('/send-tenant-email', '').replace(/\/$/, '');
+    const explicitEmailApi = import.meta.env.VITE_EMAIL_API_URL;
+    if (explicitEmailApi) {
+        return explicitEmailApi.replace('/send-tenant-email', '').replace(/\/$/, '');
+    }
+
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin;
+    }
+
+    return '';
 };
 
 const PGLandingPage = () => {

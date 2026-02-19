@@ -1,0 +1,11 @@
+{
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/send-tenant-email", "destination": "/api/index" },
+    { "source": "/create-tenant-login", "destination": "/api/index" },
+    { "source": "/tenant-support-contact", "destination": "/api/index" },
+    { "source": "/visit-requests", "destination": "/api/index" },
+    { "source": "/guardian/:path*", "destination": "/api/index" },
+    { "source": "/admin-invites/:path*", "destination": "/api/index" }
+  ]
+}

@@ -594,7 +594,7 @@ export const DataProvider = ({ children }) => {
                 .select('id,name,address,food_amount')
                 .eq('id', tenantData.pgId)
                 .single();
-            await fetch(import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email', {
+            await fetch(getEmailApiUrl(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -633,7 +633,7 @@ export const DataProvider = ({ children }) => {
                 .select('id,name,address,food_amount')
                 .eq('id', data.pgId)
                 .single();
-            await fetch(import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email', {
+            await fetch(getEmailApiUrl(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -647,15 +647,29 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const isLocalDev = () => {
+        if (typeof window === 'undefined') return false;
+        return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    };
+
+    const getEmailApiUrl = () => {
+        const explicitEmailApi = import.meta.env.VITE_EMAIL_API_URL;
+        if (explicitEmailApi) return explicitEmailApi;
+        if (isLocalDev()) return 'http://localhost:4000/send-tenant-email';
+        return '/send-tenant-email';
+    };
+
     const getApiBaseUrl = () => {
         const explicitBase = import.meta.env.VITE_API_BASE_URL;
         if (explicitBase) return explicitBase.replace(/\/$/, '');
 
-        const emailApi = import.meta.env.VITE_EMAIL_API_URL || 'http://localhost:4000/send-tenant-email';
+        const emailApi = getEmailApiUrl();
         const fromEmailApi = emailApi.replace('/send-tenant-email', '').replace(/\/$/, '');
         if (/^https?:\/\//i.test(fromEmailApi)) return fromEmailApi;
 
-        return 'http://localhost:4000';
+        if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
+        if (isLocalDev()) return 'http://localhost:4000';
+        return '';
     };
 
     const getAccessToken = async () => {
@@ -783,10 +797,10 @@ export const DataProvider = ({ children }) => {
         const trimmed = (email || '').trim();
         if (!trimmed) return null;
 
-        const endpointPaths = [
-            `${getApiBaseUrl()}/tenant-support-contact`,
-            'http://localhost:4000/tenant-support-contact'
-        ];
+        const endpointPaths = [`${getApiBaseUrl()}/tenant-support-contact`];
+        if (isLocalDev()) {
+            endpointPaths.push('http://localhost:4000/tenant-support-contact');
+        }
 
         let lastError = null;
         for (const endpoint of endpointPaths) {

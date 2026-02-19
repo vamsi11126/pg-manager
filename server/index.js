@@ -16,20 +16,48 @@ const {
   PORT = 4000,
   SUPABASE_URL,
   SERVICE_ROLE_KEY,
-  DEFAULT_TENANT_PASSWORD = 'Tenant@1234',
+  DEFAULT_TENANT_PASSWORD = '',
   GUARDIAN_LOGIN_DOMAIN = 'guardian.pg-manager.local',
   SUPER_ADMIN_EMAIL = '',
   ADMIN_INVITE_URL = 'http://localhost:5173',
-  ADMIN_INVITE_EXPIRY_HOURS = '24'
+  ADMIN_INVITE_EXPIRY_HOURS = '24',
+  ALLOWED_ORIGINS = 'http://localhost:5173'
 } = process.env;
 
-if (!SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
-  console.error('Missing SMTP_USER, SMTP_PASS, or SMTP_FROM in .env');
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const allowedOrigins = ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+
+if ((!SMTP_USER || !SMTP_PASS || !SMTP_FROM) && IS_PRODUCTION) {
+  throw new Error('Missing SMTP_USER, SMTP_PASS, or SMTP_FROM in environment');
+}
+
+if ((!SUPABASE_URL || !SERVICE_ROLE_KEY) && IS_PRODUCTION) {
+  throw new Error('Missing SUPABASE_URL or SERVICE_ROLE_KEY in environment');
 }
 
 const app = express();
-app.use(cors());
+app.disable('x-powered-by');
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS blocked'));
+  },
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json({ limit: '2mb' }));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (IS_PRODUCTION) {
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'");
+  }
+  next();
+});
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -350,8 +378,6 @@ app.post('/create-tenant-login', async (req, res) => {
     if (!tenantId) {
       return res.status(400).json({ error: 'tenantId is required' });
     }
-    console.log('[create-tenant-login] tenantId:', tenantId);
-    console.log('[create-tenant-login] SUPABASE_URL:', SUPABASE_URL);
 
     const { data: tenantRow, error: tenantError } = await supabaseAdmin
       .from('tenants')
@@ -360,7 +386,6 @@ app.post('/create-tenant-login', async (req, res) => {
       .single();
 
     if (tenantError || !tenantRow) {
-      console.error('[create-tenant-login] tenant lookup failed:', tenantError);
       return res.status(404).json({ error: 'Tenant not found' });
     }
 
@@ -1018,6 +1043,10 @@ app.delete('/admin-invites/:inviteId', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Email server listening on http://localhost:${PORT}`);
-});
+if (!IS_PRODUCTION) {
+  app.listen(PORT, () => {
+    console.log(`Email server listening on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
