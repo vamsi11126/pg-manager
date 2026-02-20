@@ -78,10 +78,8 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
     };
 
     const getLandingUrl = () => `${window.location.origin}/pg/${pg.id}/landingpage`;
-    const isLegacyQr = Boolean(landingQr && /localhost|127\.0\.0\.1/i.test(landingQr));
-
-    const handleGenerateLandingQr = (force = false) => {
-        if (landingQr && !force) return;
+    const handleGenerateLandingQr = () => {
+        if (landingQr) return;
         const landingUrl = getLandingUrl();
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(landingUrl)}`;
         setLandingQr(qrUrl);
@@ -232,11 +230,6 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
                         <p style={{ color: 'var(--text-muted)', margin: 0 }}>
                             QR generated and stored.
                         </p>
-                        {isLegacyQr && (
-                            <p style={{ margin: 0, color: 'var(--danger)', fontSize: '0.85rem' }}>
-                                This QR was created for localhost. Regenerate for this domain.
-                            </p>
-                        )}
                         {copyStatus && (
                             <p style={{ margin: 0, color: 'var(--secondary)', fontSize: '0.85rem' }}>
                                 {copyStatus}
@@ -258,14 +251,6 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
                             >
                                 Download QR
                             </a>
-                            <button
-                                type="button"
-                                className="btn btn-primary"
-                                onClick={() => handleGenerateLandingQr(true)}
-                                disabled={authRole !== 'admin'}
-                            >
-                                Regenerate QR
-                            </button>
                         </div>
                     </div>
                 ) : (
