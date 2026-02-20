@@ -9,6 +9,7 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
     const [neighborhoodSnapshot, setNeighborhoodSnapshot] = useState(pg?.neighborhoodDetails || '');
     const [galleryPhotos, setGalleryPhotos] = useState(pg?.galleryPhotos || []);
     const [landingQr, setLandingQr] = useState(pg?.landingQr || '');
+    const [copyStatus, setCopyStatus] = useState('');
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -76,9 +77,12 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
         }
     };
 
-    const handleGenerateLandingQr = () => {
-        if (landingQr) return;
-        const landingUrl = `${window.location.origin}/pg/${pg.id}/landingpage`;
+    const getLandingUrl = () => `${window.location.origin}/pg/${pg.id}/landingpage`;
+    const isLegacyQr = Boolean(landingQr && /localhost|127\.0\.0\.1/i.test(landingQr));
+
+    const handleGenerateLandingQr = (force = false) => {
+        if (landingQr && !force) return;
+        const landingUrl = getLandingUrl();
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(landingUrl)}`;
         setLandingQr(qrUrl);
         updatePg(
@@ -88,6 +92,16 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
             },
             { successMessage: 'Landing page QR generated and saved.' }
         );
+    };
+
+    const handleCopyLandingUrl = async () => {
+        try {
+            await navigator.clipboard.writeText(getLandingUrl());
+            setCopyStatus('Landing URL copied.');
+        } catch {
+            setCopyStatus('Could not copy URL. Copy manually.');
+        }
+        setTimeout(() => setCopyStatus(''), 1600);
     };
 
     return (
@@ -212,9 +226,47 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
                 {landingQr ? (
                     <div style={{ display: 'grid', gap: '1rem' }}>
                         <img src={landingQr} alt="Landing page QR" style={{ width: '220px', maxWidth: '100%', borderRadius: '12px', border: '1px solid var(--border-glass)' }} />
-                        <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-                            QR generated and stored. Regeneration is disabled.
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            Landing URL: {getLandingUrl()}
                         </p>
+                        <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                            QR generated and stored.
+                        </p>
+                        {isLegacyQr && (
+                            <p style={{ margin: 0, color: 'var(--danger)', fontSize: '0.85rem' }}>
+                                This QR was created for localhost. Regenerate for this domain.
+                            </p>
+                        )}
+                        {copyStatus && (
+                            <p style={{ margin: 0, color: 'var(--secondary)', fontSize: '0.85rem' }}>
+                                {copyStatus}
+                            </p>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={handleCopyLandingUrl}
+                            >
+                                Copy Landing URL
+                            </button>
+                            <a
+                                href={landingQr}
+                                download={`pg-${pg.id}-landing-qr.png`}
+                                className="btn btn-outline"
+                                style={{ textDecoration: 'none' }}
+                            >
+                                Download QR
+                            </a>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={() => handleGenerateLandingQr(true)}
+                                disabled={authRole !== 'admin'}
+                            >
+                                Regenerate QR
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <button

@@ -757,6 +757,51 @@ app.post('/visit-requests', async (req, res) => {
   }
 });
 
+app.get('/public/pg/:pgId', async (req, res) => {
+  try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Server not configured' });
+    }
+
+    const pgId = (req.params.pgId || '').trim();
+    if (!pgId) {
+      return res.status(400).json({ error: 'pgId is required' });
+    }
+
+    const { data: pgRow, error: pgError } = await supabaseAdmin
+      .from('pgs')
+      .select('*')
+      .eq('id', pgId)
+      .maybeSingle();
+
+    if (pgError || !pgRow) {
+      return res.status(404).json({ error: 'PG not found' });
+    }
+
+    let admin = null;
+    if (pgRow.admin_id) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('full_name,email,phone')
+        .eq('id', pgRow.admin_id)
+        .maybeSingle();
+
+      if (profile) {
+        admin = {
+          name: profile.full_name || 'PG Admin',
+          email: profile.email || '',
+          phone: profile.phone || ''
+        };
+      }
+    }
+
+    return res.json({ success: true, pg: pgRow, admin });
+  } catch (err) {
+    console.error('Public PG fetch error:', err);
+    return res.status(500).json({ error: 'Failed to fetch PG details' });
+  }
+});
+
 app.delete('/guardian/:pgId', async (req, res) => {
   try {
     const auth = await getRequester(req);

@@ -70,24 +70,42 @@ const PGLandingPage = () => {
             setError('');
 
             let currentPg = pgs.find((p) => p.id === id) || null;
+            let adminFromApi = null;
 
             if (!currentPg) {
-                const { data, error: pgError } = await supabase
-                    .from('pgs')
-                    .select('*')
-                    .eq('id', id)
-                    .maybeSingle();
-                if (pgError) {
-                    setError('Unable to load PG details.');
-                } else if (data) {
-                    currentPg = normalizePg(data);
+                try {
+                    const res = await fetch(`${getApiBaseUrl()}/public/pg/${id}`);
+                    const payload = await res.json().catch(() => ({}));
+                    if (res.ok && payload?.pg) {
+                        currentPg = normalizePg(payload.pg);
+                        adminFromApi = payload.admin || null;
+                    }
+                } catch {
+                    // Fallback to direct Supabase read below.
+                }
+
+                if (!currentPg) {
+                    const { data, error: pgError } = await supabase
+                        .from('pgs')
+                        .select('*')
+                        .eq('id', id)
+                        .maybeSingle();
+                    if (pgError) {
+                        setError('Unable to load PG details.');
+                    } else if (data) {
+                        currentPg = normalizePg(data);
+                    }
                 }
             }
 
             if (!mounted) return;
             setPg(currentPg);
 
-            if (currentPg?.adminId) {
+            if (adminFromApi) {
+                setAdmin(adminFromApi);
+            }
+
+            if (currentPg?.adminId && !adminFromApi) {
                 if (user?.id === currentPg.adminId) {
                     setAdmin({
                         name: user.full_name || user.name || 'PG Admin',
