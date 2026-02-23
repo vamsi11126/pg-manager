@@ -16,7 +16,7 @@ import PgHeaderTabs from '../components/pg-details/PgHeaderTabs';
 import PgEditModal from '../components/pg-details/PgEditModal';
 import HighlightsSection from '../components/pg-details/HighlightsSection';
 import GuardianSection from '../components/pg-details/GuardianSection';
-import { validateAadhaar } from '../utils/aadhaar';
+import { tenantSchema } from '../validation/tenantSchema';
 
 const PGDetails = () => {
     const { id } = useParams();
@@ -200,6 +200,23 @@ const PGDetails = () => {
 
     const [foodMenu, setFoodMenu] = useState((pg?.foodMenu && pg.foodMenu.length > 0) ? pg.foodMenu : defaultFoodMenu);
     const [foodAmountDraft, setFoodAmountDraft] = useState(pg?.foodAmount ?? '');
+
+    const getTenantValidationErrors = (tenantData) => {
+        const parsed = tenantSchema.safeParse(tenantData);
+        if (parsed.success) {
+            return { isValid: true, errors: {}, data: parsed.data };
+        }
+
+        const fieldErrors = {};
+        parsed.error.issues.forEach((issue) => {
+            const field = issue.path?.[0];
+            if (field && !fieldErrors[field]) {
+                fieldErrors[field] = issue.message;
+            }
+        });
+
+        return { isValid: false, errors: fieldErrors };
+    };
 
     useEffect(() => {
         if (pg) {
@@ -517,32 +534,22 @@ const PGDetails = () => {
     const handleAddTenant = (e) => {
         e.preventDefault();
 
-        let hasError = false;
-
-        // Phone validation
-        if (newTenant.phone.length !== 10) {
-            setPhoneError('Phone number must be exactly 10 digits');
-            hasError = true;
-        } else {
-            setPhoneError('');
+        const { isValid, errors, data } = getTenantValidationErrors(newTenant);
+        setPhoneError(errors.phone || '');
+        setAadharError(errors.aadhar || '');
+        if (!isValid) {
+            const firstError = Object.values(errors)[0];
+            if (firstError && !errors.phone && !errors.aadhar) {
+                alert(firstError);
+            }
+            return;
         }
-
-        // Aadhaar validation
-        const aadhaarValidation = validateAadhaar(newTenant.aadhar);
-        if (!aadhaarValidation.isValid) {
-            setAadharError(aadhaarValidation.error);
-            hasError = true;
-        } else {
-            setAadharError('');
-        }
-
-        if (hasError) return;
 
         const tenantData = {
             ...newTenant,
             pgId: id, // Ensure correct PG ID
-            rent: Number(newTenant.rent),
-            advance: Number(newTenant.advance)
+            rent: data.rent,
+            advance: data.advance
         };
 
         addTenant(tenantData);
@@ -562,28 +569,21 @@ const PGDetails = () => {
         e.preventDefault();
         if (!editTenant) return;
 
-        let hasError = false;
-        if (editTenant.phone.length !== 10) {
-            setEditPhoneError('Phone number must be exactly 10 digits');
-            hasError = true;
-        } else {
-            setEditPhoneError('');
+        const { isValid, errors, data } = getTenantValidationErrors(editTenant);
+        setEditPhoneError(errors.phone || '');
+        setEditAadharError(errors.aadhar || '');
+        if (!isValid) {
+            const firstError = Object.values(errors)[0];
+            if (firstError && !errors.phone && !errors.aadhar) {
+                alert(firstError);
+            }
+            return;
         }
-
-        const editAadhaarValidation = validateAadhaar(editTenant.aadhar);
-        if (!editAadhaarValidation.isValid) {
-            setEditAadharError(editAadhaarValidation.error);
-            hasError = true;
-        } else {
-            setEditAadharError('');
-        }
-
-        if (hasError) return;
 
         const updates = {
             ...editTenant,
-            rent: Number(editTenant.rent),
-            advance: Number(editTenant.advance)
+            rent: data.rent,
+            advance: data.advance
         };
 
         const passwordChanged = Boolean(editTenant.newPassword && editTenant.newPassword.trim());
