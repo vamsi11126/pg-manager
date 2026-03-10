@@ -12,7 +12,8 @@ import TenantDashboard from './pages/TenantDashboard';
 import PGLandingPage from './pages/PGLandingPage';
 import AdminSettings from './pages/AdminSettings';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import { Home, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
+import UserManual from './pages/UserManual';
+import { BookOpen, Home, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 
 const AppContent = () => {
   const { user, tenantUser, authRole, logout, loading } = useData();
@@ -175,6 +176,14 @@ const AppContent = () => {
                     <Home size={20} /> {!isSidebarCollapsed && 'Dashboard'}
                   </Link>
                   <Link
+                    to="/user-manual"
+                    className="btn btn-primary tooltip-target nav-item-btn"
+                    data-tooltip="Read setup and usage guide"
+                    style={{ background: 'transparent', color: 'var(--text-main)', justifyContent: isSidebarCollapsed ? 'center' : 'flex-start' }}
+                  >
+                    <BookOpen size={20} /> {!isSidebarCollapsed && 'User Manual'}
+                  </Link>
+                  <Link
                     to="/settings"
                     className="btn btn-primary tooltip-target nav-item-btn"
                     data-tooltip="Update account settings"
@@ -211,6 +220,7 @@ const AppContent = () => {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/pg/:id" element={<PGDetails />} />
                   <Route path="/tenants" element={<TenantsPage />} />
+                  <Route path="/user-manual" element={<UserManual />} />
                   <Route path="/settings" element={<AdminSettings />} />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>

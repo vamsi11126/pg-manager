@@ -335,6 +335,142 @@ h3 {
   min-width: 0;
 }
 
+.manual-header-card {
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.manual-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.manual-title-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.16);
+  border: 1px solid rgba(99, 102, 241, 0.32);
+  color: #c7d2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manual-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.manual-progress-node {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.15);
+  color: #c7d2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.manual-progress-line {
+  width: 24px;
+  height: 2px;
+  background: rgba(99, 102, 241, 0.35);
+  border-radius: 999px;
+}
+
+.manual-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.manual-step-card {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.manual-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.manual-step-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #c7d2fe;
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  background: rgba(99, 102, 241, 0.14);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+}
+
+.manual-step-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  color: #a5f3fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manual-step-description {
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 0.15rem;
+}
+
+.manual-points-list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.manual-points-list li {
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.9rem;
+}
+
+.manual-notes-wrap {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.manual-note-box {
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.manual-footer-note {
+  margin-top: 1.5rem;
+  padding: 1rem 1.15rem;
+}
+
 .toast-stack {
   position: fixed;
   right: 1rem;
@@ -549,6 +685,14 @@ h3 {
   .responsive-modal-card {
     padding: 1.25rem !important;
     max-height: 88vh;
+  }
+
+  .manual-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-title-wrap {
+    align-items: flex-start;
   }
 
   .manage-tab-strip {
