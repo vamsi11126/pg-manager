@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ImagePlus, Plus, Save, X } from 'lucide-react';
 import { useData } from '../../context/DataContext';
+import { facilitySchema, highlightSchema } from '../../schemas/highlightSchema';
+import { validateWithSchema } from '../../utils/validation';
 
 const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
     const { authRole } = useData();
@@ -10,6 +12,7 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
     const [galleryPhotos, setGalleryPhotos] = useState(pg?.galleryPhotos || []);
     const [landingQr, setLandingQr] = useState(pg?.landingQr || '');
     const [copyStatus, setCopyStatus] = useState('');
+    const [errors, setErrors] = useState({});
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -20,14 +23,19 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
     }, [pg?.id]);
 
     const handleAddFacility = () => {
-        const trimmed = facilityInput.trim();
-        if (!trimmed) return;
+        const validation = validateWithSchema(facilitySchema, { facility: facilityInput });
+        if (!validation.success) {
+            setErrors((prev) => ({ ...prev, facility: validation.errors.facility }));
+            return;
+        }
+        const trimmed = validation.data.facility;
         if (facilities.some(f => f.toLowerCase() === trimmed.toLowerCase())) {
             setFacilityInput('');
             return;
         }
         setFacilities(prev => [...prev, trimmed]);
         setFacilityInput('');
+        setErrors((prev) => ({ ...prev, facility: '', neighborhoodDetails: '' }));
     };
 
     const handleRemoveFacility = (facility) => {
@@ -62,13 +70,24 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
     };
 
     const handleSave = async () => {
+        const validation = validateWithSchema(highlightSchema, {
+            facilities,
+            neighborhoodDetails: neighborhoodSnapshot,
+            galleryPhotos,
+            landingQr
+        });
+        if (!validation.success) {
+            setErrors(validation.errors);
+            return;
+        }
+
         const res = await updatePg(
             {
                 ...pg,
-                facilities,
-                neighborhoodDetails: neighborhoodSnapshot,
-                galleryPhotos,
-                landingQr
+                facilities: validation.data.facilities,
+                neighborhoodDetails: validation.data.neighborhoodDetails,
+                galleryPhotos: validation.data.galleryPhotos,
+                landingQr: validation.data.landingQr
             },
             { successMessage: 'Highlights section updated successfully.' }
         );
@@ -112,13 +131,17 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
                         className="input-field"
                         placeholder="e.g. Laundry, Gym, Security"
                         value={facilityInput}
-                        onChange={(e) => setFacilityInput(e.target.value)}
+                        onChange={(e) => {
+                            setFacilityInput(e.target.value);
+                            setErrors((prev) => ({ ...prev, facility: '' }));
+                        }}
                         style={{ marginBottom: 0, flex: 1, minWidth: '220px' }}
                     />
                     <button onClick={handleAddFacility} className="btn btn-outline" type="button">
                         <Plus size={16} /> Add Facility
                     </button>
                 </div>
+                {errors.facility && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginBottom: '1rem' }}>{errors.facility}</p>}
                 {facilities.length === 0 ? (
                     <p style={{ color: 'var(--text-muted)' }}>No facilities added yet.</p>
                 ) : (
@@ -158,8 +181,12 @@ const HighlightsSection = ({ pg, updatePg, onSaveSuccess }) => {
                     style={{ minHeight: '120px', resize: 'vertical' }}
                     placeholder="Describe connectivity, nearby essentials, commute access, safety, and locality highlights."
                     value={neighborhoodSnapshot}
-                    onChange={(e) => setNeighborhoodSnapshot(e.target.value)}
+                    onChange={(e) => {
+                        setNeighborhoodSnapshot(e.target.value);
+                        setErrors((prev) => ({ ...prev, neighborhoodDetails: '' }));
+                    }}
                 />
+                {errors.neighborhoodDetails && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors.neighborhoodDetails}</p>}
             </div>
 
             <div className="glass-card" style={{ padding: '1.5rem' }}>

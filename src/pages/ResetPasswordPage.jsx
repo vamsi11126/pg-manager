@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { KeyRound, ArrowLeft } from 'lucide-react';
+import { adminPasswordSchema } from '../schemas/authSchemas';
+import { validateWithSchema } from '../utils/validation';
 
 const ResetPasswordPage = () => {
     const navigate = useNavigate();
@@ -10,33 +12,22 @@ const ResetPasswordPage = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
-
-    const validatePassword = (password) => {
-        if (!password || password.length < 8) return 'Password must be at least 8 characters';
-        if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter';
-        if (!/[a-z]/.test(password)) return 'Password must include at least one lowercase letter';
-        if (!/[0-9]/.test(password)) return 'Password must include at least one number';
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'Password must include at least one symbol';
-        return '';
-    };
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setMessage('');
 
-        const passwordError = validatePassword(newPassword);
-        if (passwordError) {
-            setError(passwordError);
+        const validation = validateWithSchema(adminPasswordSchema, { newPassword, confirmPassword });
+        if (!validation.success) {
+            setFieldErrors(validation.errors);
+            setError(Object.values(validation.errors)[0] || 'Please correct the password fields.');
             return;
         }
 
-        if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        const res = await updateAdminPassword(newPassword);
+        setFieldErrors({});
+        const res = await updateAdminPassword(validation.data.newPassword);
         if (!res.success) {
             setError(res.message || 'Could not reset password');
             return;
@@ -53,16 +44,20 @@ const ResetPasswordPage = () => {
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                     Enter your new password below.
                 </p>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} noValidate>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>New Password</label>
                         <input
                             type="password"
                             className="input-field"
                             value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
+                            onChange={(e) => {
+                                setNewPassword(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, newPassword: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.newPassword && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.newPassword}</p>}
                     </div>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Confirm Password</label>
@@ -70,9 +65,13 @@ const ResetPasswordPage = () => {
                             type="password"
                             className="input-field"
                             value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            onChange={(e) => {
+                                setConfirmPassword(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.confirmPassword && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.confirmPassword}</p>}
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                         <KeyRound size={16} /> Reset Password

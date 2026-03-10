@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useData } from '../context/DataContext';
 import { IndianRupee, Phone, CheckCircle2, Clock, LogOut, KeyRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { paymentTicketSchema } from '../schemas/paymentSchema';
+import { adminPasswordSchema } from '../schemas/authSchemas';
+import { validateWithSchema } from '../utils/validation';
 
 const TenantDashboard = () => {
     const { tenantUser, tenantPg, tenantRoommates, tenantPaymentRequests, addTenantPaymentRequest, updateTenantPassword, getTenantSupportContact, logout } = useData();
@@ -12,6 +15,8 @@ const TenantDashboard = () => {
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [message, setMessage] = useState('');
     const [guardianContact, setGuardianContact] = useState(null);
+    const [ticketErrors, setTicketErrors] = useState({});
+    const [passwordErrors, setPasswordErrors] = useState({});
 
     const monthLabel = useMemo(() => {
         const now = new Date();
@@ -77,8 +82,17 @@ const TenantDashboard = () => {
     const handleRaiseTicket = async (e) => {
         e.preventDefault();
         setMessage('');
-        const description = `${ticketType} Payment - ${monthLabel}${ticketNote ? ` (${ticketNote})` : ''}`;
-        const res = await addTenantPaymentRequest({ description, amount: ticketAmount });
+
+        const validation = validateWithSchema(paymentTicketSchema, { ticketType, ticketAmount, ticketNote });
+        if (!validation.success) {
+            setTicketErrors(validation.errors);
+            setMessage(Object.values(validation.errors)[0] || 'Please correct the form errors.');
+            return;
+        }
+
+        setTicketErrors({});
+        const description = `${validation.data.ticketType} Payment - ${monthLabel}${validation.data.ticketNote ? ` (${validation.data.ticketNote})` : ''}`;
+        const res = await addTenantPaymentRequest({ description, amount: validation.data.ticketAmount });
         if (!res.success) {
             setMessage(res.message || 'Failed to raise request');
             return;
@@ -91,15 +105,19 @@ const TenantDashboard = () => {
     const handleChangePassword = async (e) => {
         e.preventDefault();
         setMessage('');
-        if (!password || password.length < 6) {
-            setMessage('Password must be at least 6 characters.');
+
+        const validation = validateWithSchema(adminPasswordSchema, {
+            newPassword: password,
+            confirmPassword: passwordConfirm
+        });
+        if (!validation.success) {
+            setPasswordErrors(validation.errors);
+            setMessage(Object.values(validation.errors)[0] || 'Please correct the password fields.');
             return;
         }
-        if (password !== passwordConfirm) {
-            setMessage('Passwords do not match.');
-            return;
-        }
-        const res = await updateTenantPassword(password);
+
+        setPasswordErrors({});
+        const res = await updateTenantPassword(validation.data.newPassword);
         if (!res.success) {
             setMessage(res.message || 'Failed to update password');
             return;
@@ -210,7 +228,7 @@ const TenantDashboard = () => {
             <div className="grid grid-cols-2" style={{ gap: '1.5rem', marginTop: '1.5rem' }}>
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ marginTop: 0 }}>Raise Payment Ticket</h3>
-                    <form onSubmit={handleRaiseTicket}>
+                    <form onSubmit={handleRaiseTicket} noValidate>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Bill Type</label>
                             <select className="input-field" value={ticketType} onChange={(e) => setTicketType(e.target.value)}>
@@ -225,10 +243,14 @@ const TenantDashboard = () => {
                                 type="number"
                                 className="input-field"
                                 value={ticketAmount}
-                                onChange={(e) => setTicketAmount(e.target.value)}
+                                onChange={(e) => {
+                                    setTicketAmount(e.target.value);
+                                    setTicketErrors((prev) => ({ ...prev, ticketAmount: '' }));
+                                }}
                                 required
                                 min="1"
                             />
+                            {ticketErrors.ticketAmount && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{ticketErrors.ticketAmount}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Note (optional)</label>
@@ -236,9 +258,13 @@ const TenantDashboard = () => {
                                 type="text"
                                 className="input-field"
                                 value={ticketNote}
-                                onChange={(e) => setTicketNote(e.target.value)}
+                                onChange={(e) => {
+                                    setTicketNote(e.target.value);
+                                    setTicketErrors((prev) => ({ ...prev, ticketNote: '' }));
+                                }}
                                 placeholder="e.g. Paid via UPI"
                             />
+                            {ticketErrors.ticketNote && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{ticketErrors.ticketNote}</p>}
                         </div>
                         <button type="submit" className="btn btn-primary" disabled={hasTicketForMonth(ticketType)}>
                             <IndianRupee size={16} /> Raise Ticket
@@ -253,16 +279,20 @@ const TenantDashboard = () => {
 
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
                     <h3 style={{ marginTop: 0 }}>Change Password</h3>
-                    <form onSubmit={handleChangePassword}>
+                    <form onSubmit={handleChangePassword} noValidate>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>New Password</label>
                             <input
                                 type="password"
                                 className="input-field"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    setPasswordErrors((prev) => ({ ...prev, newPassword: '' }));
+                                }}
                                 required
                             />
+                            {passwordErrors.newPassword && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{passwordErrors.newPassword}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Confirm Password</label>
@@ -270,9 +300,13 @@ const TenantDashboard = () => {
                                 type="password"
                                 className="input-field"
                                 value={passwordConfirm}
-                                onChange={(e) => setPasswordConfirm(e.target.value)}
+                                onChange={(e) => {
+                                    setPasswordConfirm(e.target.value);
+                                    setPasswordErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                                }}
                                 required
                             />
+                            {passwordErrors.confirmPassword && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{passwordErrors.confirmPassword}</p>}
                         </div>
                         <button type="submit" className="btn btn-outline">
                             <KeyRound size={16} /> Update Password

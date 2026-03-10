@@ -13,7 +13,8 @@ export const EditTenantModal = ({
     setEditAadharError,
     handleEditTenantSubmit,
     getRoomsForEditTenant,
-    handleNumberInput
+    handleNumberInput,
+    fieldErrors = {}
 }) => {
     if (!showEditTenant || !editTenant) return null;
 
@@ -30,7 +31,7 @@ export const EditTenantModal = ({
                         <X size={24} />
                     </button>
                 </div>
-                <form onSubmit={handleEditTenantSubmit}>
+                <form onSubmit={handleEditTenantSubmit} noValidate>
                     <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -41,6 +42,7 @@ export const EditTenantModal = ({
                                 onChange={(e) => setEditTenant({ ...editTenant, name: e.target.value })}
                                 required
                             />
+                            {fieldErrors.name && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.name}</p>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -66,6 +68,7 @@ export const EditTenantModal = ({
                                 onChange={(e) => setEditTenant({ ...editTenant, email: e.target.value })}
                                 required
                             />
+                            {fieldErrors.email && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.email}</p>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -76,6 +79,7 @@ export const EditTenantModal = ({
                                 onChange={(e) => setEditTenant({ ...editTenant, profession: e.target.value })}
                                 required
                             />
+                            {fieldErrors.profession && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.profession}</p>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -112,6 +116,7 @@ export const EditTenantModal = ({
                                     </option>
                                 ))}
                             </select>
+                            {fieldErrors.roomNumber && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.roomNumber}</p>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -123,6 +128,7 @@ export const EditTenantModal = ({
                                 onKeyDown={handleNumberInput}
                                 required
                             />
+                            {fieldErrors.rent && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.rent}</p>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Advance Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -134,6 +140,7 @@ export const EditTenantModal = ({
                                 onKeyDown={handleNumberInput}
                                 required
                             />
+                            {fieldErrors.advance && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.advance}</p>}
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Joining Date <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -144,6 +151,7 @@ export const EditTenantModal = ({
                                 onChange={(e) => setEditTenant({ ...editTenant, joiningDate: e.target.value })}
                                 required
                             />
+                            {fieldErrors.joiningDate && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.joiningDate}</p>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', height: '100%', paddingTop: '1.5rem' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
@@ -186,7 +194,8 @@ export const AddTenantModal = ({
     setAadharError,
     handleAddTenant,
     getVacantRoomsForTenant,
-    handleNumberInput
+    handleNumberInput,
+    fieldErrors = {}
 }) => {
     if (!showAddTenant) return null;
 
@@ -203,7 +212,7 @@ export const AddTenantModal = ({
                         <X size={24} />
                     </button>
                 </div>
-                <form onSubmit={handleAddTenant}>
+                <form onSubmit={handleAddTenant} noValidate>
                     <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -215,6 +224,7 @@ export const AddTenantModal = ({
                                 required
                                 placeholder="Tenant Name"
                             />
+                            {fieldErrors.name && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.name}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -242,6 +252,7 @@ export const AddTenantModal = ({
                                 placeholder="tenant@example.com"
                                 required
                             />
+                            {fieldErrors.email && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.email}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -253,6 +264,7 @@ export const AddTenantModal = ({
                                 required
                                 placeholder="Student/Employee"
                             />
+                            {fieldErrors.profession && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.profession}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -300,6 +312,7 @@ export const AddTenantModal = ({
                                     </option>
                                 ))}
                             </select>
+                            {fieldErrors.roomNumber && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.roomNumber}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -311,6 +324,7 @@ export const AddTenantModal = ({
                                 onKeyDown={handleNumberInput}
                                 required
                             />
+                            {fieldErrors.rent && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.rent}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Advance Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -322,6 +336,7 @@ export const AddTenantModal = ({
                                 onKeyDown={handleNumberInput}
                                 required
                             />
+                            {fieldErrors.advance && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.advance}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem' }}>Joining Date <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -332,6 +347,7 @@ export const AddTenantModal = ({
                                 onChange={(e) => setNewTenant({ ...newTenant, joiningDate: e.target.value })}
                                 required
                             />
+                            {fieldErrors.joiningDate && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.joiningDate}</p>}
                         </div>
                         <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
                             <input

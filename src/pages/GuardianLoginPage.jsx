@@ -2,17 +2,28 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { LogIn, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { guardianLoginSchema } from '../schemas/authSchemas';
+import { validateWithSchema } from '../utils/validation';
 
 const GuardianLoginPage = () => {
     const { loginAsGuardian } = useData();
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const res = await loginAsGuardian(phone, password);
+
+        const validation = validateWithSchema(guardianLoginSchema, { phone, password });
+        if (!validation.success) {
+            setFieldErrors(validation.errors);
+            return;
+        }
+
+        setFieldErrors({});
+        const res = await loginAsGuardian(validation.data.phone, validation.data.password);
         if (!res?.success) {
             setError(res?.message || 'Login failed');
         }
@@ -31,7 +42,7 @@ const GuardianLoginPage = () => {
                     Manage your assigned PG property
                 </p>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} noValidate>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Phone Number</label>
                         <input
@@ -40,9 +51,13 @@ const GuardianLoginPage = () => {
                             placeholder="9876543210"
                             maxLength="10"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            onChange={(e) => {
+                                setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                                setFieldErrors((prev) => ({ ...prev, phone: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.phone && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{fieldErrors.phone}</p>}
                     </div>
                     <div style={{ marginBottom: '2rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Password</label>
@@ -51,9 +66,13 @@ const GuardianLoginPage = () => {
                             className="input-field"
                             placeholder="********"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, password: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.password && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{fieldErrors.password}</p>}
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                         <LogIn size={20} />

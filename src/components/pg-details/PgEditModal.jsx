@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, handleEditPg }) => {
+const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, handleEditPg, errors = {} }) => {
     if (!showEditPg) return null;
 
     return (
@@ -17,7 +17,7 @@ const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, han
                         <X size={24} />
                     </button>
                 </div>
-                <form onSubmit={handleEditPg}>
+                <form onSubmit={handleEditPg} noValidate>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>
                             PG Name <span style={{ color: 'var(--danger)' }}>*</span>
@@ -29,6 +29,7 @@ const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, han
                             onChange={(e) => setEditPgData({ ...editPgData, name: e.target.value })}
                             required
                         />
+                        {errors.name && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors.name}</p>}
                     </div>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>
@@ -41,6 +42,7 @@ const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, han
                             onChange={(e) => setEditPgData({ ...editPgData, address: e.target.value })}
                             required
                         />
+                        {errors.address && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors.address}</p>}
                     </div>
                     <div style={{ marginBottom: '1.5rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>PG Map Link (Optional)</label>
@@ -51,6 +53,7 @@ const PgEditModal = ({ showEditPg, setShowEditPg, editPgData, setEditPgData, han
                             value={editPgData.mapLink || ''}
                             onChange={(e) => setEditPgData({ ...editPgData, mapLink: e.target.value })}
                         />
+                        {errors.mapLink && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors.mapLink}</p>}
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                         <button type="button" onClick={() => setShowEditPg(false)} className="btn btn-outline">Cancel</button>

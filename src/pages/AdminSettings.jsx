@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { KeyRound, ArrowLeft, Send } from 'lucide-react';
+import { adminPasswordSchema, inviteAdminSchema } from '../schemas/authSchemas';
+import { validateWithSchema } from '../utils/validation';
 
 const AdminSettings = () => {
     const { user, updateAdminPassword, createAdminInvite } = useData();
@@ -13,33 +15,23 @@ const AdminSettings = () => {
     const [inviteMessage, setInviteMessage] = useState('');
     const [inviteError, setInviteError] = useState('');
     const [inviteLoading, setInviteLoading] = useState(false);
-
-    const validatePassword = (password) => {
-        if (!password || password.length < 8) return 'Password must be at least 8 characters';
-        if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter';
-        if (!/[a-z]/.test(password)) return 'Password must include at least one lowercase letter';
-        if (!/[0-9]/.test(password)) return 'Password must include at least one number';
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'Password must include at least one symbol';
-        return '';
-    };
+    const [passwordErrors, setPasswordErrors] = useState({});
+    const [inviteFieldErrors, setInviteFieldErrors] = useState({});
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
         setError('');
 
-        const passwordError = validatePassword(newPassword);
-        if (passwordError) {
-            setError(passwordError);
+        const validation = validateWithSchema(adminPasswordSchema, { newPassword, confirmPassword });
+        if (!validation.success) {
+            setPasswordErrors(validation.errors);
+            setError(Object.values(validation.errors)[0] || 'Please correct the password fields.');
             return;
         }
 
-        if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        const res = await updateAdminPassword(newPassword);
+        setPasswordErrors({});
+        const res = await updateAdminPassword(validation.data.newPassword);
         if (!res.success) {
             setError(res.message || 'Failed to update password');
             return;
@@ -55,19 +47,17 @@ const AdminSettings = () => {
         setInviteMessage('');
         setInviteError('');
 
-        const normalizedEmail = inviteEmail.trim().toLowerCase();
-        if (!normalizedEmail) {
-            setInviteError('Invite email is required');
-            return;
-        }
-        if (!/\S+@\S+\.\S+/.test(normalizedEmail)) {
-            setInviteError('Invite email is invalid');
+        const validation = validateWithSchema(inviteAdminSchema, { email: inviteEmail });
+        if (!validation.success) {
+            setInviteFieldErrors(validation.errors);
+            setInviteError(validation.errors.email || 'Invite email is invalid');
             return;
         }
 
+        setInviteFieldErrors({});
         setInviteLoading(true);
         try {
-            await createAdminInvite(normalizedEmail);
+            await createAdminInvite(validation.data.email);
             setInviteMessage('Admin invite sent successfully. Invite link expires in 24 hours.');
             setInviteEmail('');
         } catch (err) {
@@ -90,16 +80,20 @@ const AdminSettings = () => {
                 </p>
 
                 <h3 style={{ marginBottom: '0.75rem' }}>Change Password</h3>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} noValidate>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>New Password</label>
                         <input
                             type="password"
                             className="input-field"
                             value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
+                            onChange={(e) => {
+                                setNewPassword(e.target.value);
+                                setPasswordErrors((prev) => ({ ...prev, newPassword: '' }));
+                            }}
                             required
                         />
+                        {passwordErrors.newPassword && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{passwordErrors.newPassword}</p>}
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
@@ -108,9 +102,13 @@ const AdminSettings = () => {
                             type="password"
                             className="input-field"
                             value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            onChange={(e) => {
+                                setConfirmPassword(e.target.value);
+                                setPasswordErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                            }}
                             required
                         />
+                        {passwordErrors.confirmPassword && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{passwordErrors.confirmPassword}</p>}
                     </div>
 
                     <button type="submit" className="btn btn-primary">
@@ -128,17 +126,21 @@ const AdminSettings = () => {
                     Only the configured super admin can send invites.
                 </p>
 
-                <form onSubmit={handleInviteSubmit}>
+                <form onSubmit={handleInviteSubmit} noValidate>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Invitee Email</label>
                         <input
                             type="email"
                             className="input-field"
                             value={inviteEmail}
-                            onChange={(e) => setInviteEmail(e.target.value)}
+                            onChange={(e) => {
+                                setInviteEmail(e.target.value);
+                                setInviteFieldErrors((prev) => ({ ...prev, email: '' }));
+                            }}
                             placeholder="new-admin@example.com"
                             required
                         />
+                        {inviteFieldErrors.email && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{inviteFieldErrors.email}</p>}
                     </div>
 
                     <button type="submit" className="btn btn-primary" disabled={inviteLoading}>

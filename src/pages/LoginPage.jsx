@@ -2,18 +2,30 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { LogIn, Shield } from 'lucide-react';
+import { ownerLoginSchema } from '../schemas/authSchemas';
+import { validateWithSchema } from '../utils/validation';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [resetMessage, setResetMessage] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
     const { loginAsOwner, sendPasswordResetEmail } = useData();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const res = await loginAsOwner(email, password);
+        setResetMessage('');
+
+        const validation = validateWithSchema(ownerLoginSchema, { email, password });
+        if (!validation.success) {
+            setFieldErrors(validation.errors);
+            return;
+        }
+
+        setFieldErrors({});
+        const res = await loginAsOwner(validation.data.email, validation.data.password);
         if (!res?.success) {
             setError(res?.message || 'Login failed');
         }
@@ -23,13 +35,16 @@ const LoginPage = () => {
         setError('');
         setResetMessage('');
 
-        if (!email.trim()) {
-            setError('Enter your email first to receive reset link');
+        const validation = validateWithSchema(ownerLoginSchema.pick({ email: true }), { email });
+        if (!validation.success) {
+            setFieldErrors(validation.errors);
+            setError(validation.errors.email || 'Enter your email first to receive reset link');
             return;
         }
 
+        setFieldErrors((prev) => ({ ...prev, email: '' }));
         const redirectTo = `${window.location.origin}/reset-password`;
-        const res = await sendPasswordResetEmail(email, redirectTo);
+        const res = await sendPasswordResetEmail(validation.data.email, redirectTo);
         if (!res.success) {
             setError(res.message || 'Could not send reset email');
             return;
@@ -50,7 +65,7 @@ const LoginPage = () => {
                     Manage your PGs and Tenants in one place
                 </p>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} noValidate>
                     <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Email Address</label>
                         <input
@@ -58,20 +73,28 @@ const LoginPage = () => {
                             className="input-field"
                             placeholder="owner@example.com"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, email: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.email && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{fieldErrors.email}</p>}
                     </div>
                     <div style={{ marginBottom: '2rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Password</label>
                         <input
                             type="password"
                             className="input-field"
-                            placeholder="••••••••"
+                            placeholder="********"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, password: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.password && <p style={{ marginTop: '0.25rem', color: 'var(--danger)', fontSize: '0.75rem' }}>{fieldErrors.password}</p>}
                         <button
                             type="button"
                             onClick={handleForgotPassword}

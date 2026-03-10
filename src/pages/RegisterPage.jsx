@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, ArrowLeft, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { registerAdminSchema } from '../schemas/authSchemas';
+import { validateWithSchema } from '../utils/validation';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
@@ -44,35 +46,6 @@ const RegisterPage = () => {
         run();
     }, [inviteToken, verifyAdminInvite]);
 
-    const validateForm = () => {
-        const nextErrors = {};
-        if (!formData.name.trim()) nextErrors.name = 'Name is required';
-
-        if (!formData.password) {
-            nextErrors.password = 'Password is required';
-        } else {
-            const hasUpperCase = /[A-Z]/.test(formData.password);
-            const hasLowerCase = /[a-z]/.test(formData.password);
-            const hasNumber = /[0-9]/.test(formData.password);
-            const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
-
-            if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSymbol) {
-                nextErrors.password = 'Password must contain uppercase, lowercase, number, and symbol';
-            } else if (formData.password.length < 8) {
-                nextErrors.password = 'Password must be at least 8 characters';
-            }
-        }
-
-        if (!formData.confirmPassword) {
-            nextErrors.confirmPassword = 'Please confirm your password';
-        } else if (formData.password !== formData.confirmPassword) {
-            nextErrors.confirmPassword = 'Passwords do not match';
-        }
-
-        setErrors(nextErrors);
-        return Object.keys(nextErrors).length === 0;
-    };
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -85,7 +58,13 @@ const RegisterPage = () => {
         e.preventDefault();
         setInviteError('');
 
-        if (!validateForm()) return;
+        const validation = validateWithSchema(registerAdminSchema, formData);
+        if (!validation.success) {
+            setErrors(validation.errors);
+            return;
+        }
+
+        setErrors({});
         if (!inviteToken) {
             setInviteError('Invite token is missing.');
             return;
@@ -94,8 +73,8 @@ const RegisterPage = () => {
         setSubmitting(true);
         const result = await acceptAdminInvite({
             token: inviteToken,
-            name: formData.name.trim(),
-            password: formData.password
+            name: validation.data.name,
+            password: validation.data.password
         });
         setSubmitting(false);
 
@@ -137,7 +116,7 @@ const RegisterPage = () => {
                 )}
 
                 {inviteStatus === 'valid' && (
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} noValidate>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
                                 Invited Email

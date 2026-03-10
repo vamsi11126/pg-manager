@@ -3,11 +3,14 @@ import { useData } from '../context/DataContext';
 import { Plus, Building2, Users, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { pgSchema } from '../schemas/pgSchema';
+import { validateWithSchema } from '../utils/validation';
 
 const Dashboard = () => {
     const { pgs, tenants, addPg, authRole } = useData();
     const { error: showError } = useToast();
     const [showAddPg, setShowAddPg] = useState(false);
+    const [formErrors, setFormErrors] = useState({});
     const [newPg, setNewPg] = useState({
         name: '',
         address: '',
@@ -19,14 +22,7 @@ const Dashboard = () => {
         galleryPhotos: []
     });
 
-    const handleAddPg = (e) => {
-        e.preventDefault();
-        if (!newPg.name.trim() || !newPg.address.trim()) {
-            showError('PG name and address are required');
-            return;
-        }
-        addPg(newPg);
-        setShowAddPg(false);
+    const resetPgForm = () => {
         setNewPg({
             name: '',
             address: '',
@@ -37,6 +33,21 @@ const Dashboard = () => {
             neighborhoodDetails: '',
             galleryPhotos: []
         });
+        setFormErrors({});
+    };
+
+    const handleAddPg = (e) => {
+        e.preventDefault();
+        const validation = validateWithSchema(pgSchema, newPg);
+        if (!validation.success) {
+            setFormErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the form errors.');
+            return;
+        }
+
+        addPg({ ...newPg, ...validation.data });
+        setShowAddPg(false);
+        resetPgForm();
     };
 
     return (
@@ -59,7 +70,6 @@ const Dashboard = () => {
                 )}
             </header>
 
-            {/* Stats row */}
             <div className="grid grid-cols-2" style={{ marginBottom: '2rem' }}>
                 <div className="glass-card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -83,7 +93,6 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <h2 style={{ marginBottom: '1.5rem' }}>Your Properties</h2>
@@ -139,7 +148,6 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* Add PG Modal */}
             {showAddPg && authRole === 'admin' && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -148,7 +156,7 @@ const Dashboard = () => {
                 }}>
                     <div className="glass-card responsive-modal-card" style={{ maxWidth: '500px', padding: '2rem' }}>
                         <h2>Add New Property</h2>
-                        <form onSubmit={handleAddPg}>
+                        <form onSubmit={handleAddPg} noValidate>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>
                                     PG Name <span style={{ color: 'var(--danger)' }}>*</span>
@@ -158,9 +166,13 @@ const Dashboard = () => {
                                     className="input-field"
                                     placeholder="e.g. Skyline Luxury PG"
                                     value={newPg.name}
-                                    onChange={(e) => setNewPg({ ...newPg, name: e.target.value })}
+                                    onChange={(e) => {
+                                        setNewPg({ ...newPg, name: e.target.value });
+                                        setFormErrors((prev) => ({ ...prev, name: '' }));
+                                    }}
                                     required
                                 />
+                                {formErrors.name && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.name}</p>}
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>
@@ -171,9 +183,13 @@ const Dashboard = () => {
                                     style={{ minHeight: '100px', resize: 'none' }}
                                     placeholder="Full address of the property"
                                     value={newPg.address}
-                                    onChange={(e) => setNewPg({ ...newPg, address: e.target.value })}
+                                    onChange={(e) => {
+                                        setNewPg({ ...newPg, address: e.target.value });
+                                        setFormErrors((prev) => ({ ...prev, address: '' }));
+                                    }}
                                     required
                                 />
+                                {formErrors.address && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.address}</p>}
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>PG Map Link (Optional)</label>
@@ -182,11 +198,15 @@ const Dashboard = () => {
                                     className="input-field"
                                     placeholder="https://maps.google.com/..."
                                     value={newPg.mapLink}
-                                    onChange={(e) => setNewPg({ ...newPg, mapLink: e.target.value })}
+                                    onChange={(e) => {
+                                        setNewPg({ ...newPg, mapLink: e.target.value });
+                                        setFormErrors((prev) => ({ ...prev, mapLink: '' }));
+                                    }}
                                 />
+                                {formErrors.mapLink && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.mapLink}</p>}
                             </div>
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                <button type="button" onClick={() => setShowAddPg(false)} className="btn btn-outline">Cancel</button>
+                                <button type="button" onClick={() => { setShowAddPg(false); resetPgForm(); }} className="btn btn-outline">Cancel</button>
                                 <button type="submit" className="btn btn-primary">Create PG</button>
                             </div>
                         </form>

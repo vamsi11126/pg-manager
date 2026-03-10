@@ -3,9 +3,13 @@ import { useData } from '../context/DataContext';
 import { Plus, User, Phone, Mail, Briefcase, FileText, Calendar, IndianRupee, Search, ArrowLeft, X, Trash2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { validateAadhaar } from '../utils/aadhaar';
+import { tenantSchema } from '../schemas/tenantSchema';
+import { validateWithSchema } from '../utils/validation';
+import { useToast } from '../context/ToastContext';
 
 const TenantsPage = () => {
     const { pgs, tenants, addTenant, deleteTenant, paymentRequests, updatePaymentRequestStatus } = useData();
+    const { error: showError } = useToast();
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const pgFilter = queryParams.get('pgId');
@@ -14,6 +18,7 @@ const TenantsPage = () => {
     const [viewingTenant, setViewingTenant] = useState(null);
     const [aadharError, setAadharError] = useState('');
     const [phoneError, setPhoneError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const [newTenant, setNewTenant] = useState({
         name: '',
@@ -54,35 +59,25 @@ const TenantsPage = () => {
     const handleAddTenant = (e) => {
         e.preventDefault();
 
-        let hasError = false;
-
-        // Phone validation
-        if (newTenant.phone.length !== 10) {
-            setPhoneError('Phone number must be exactly 10 digits');
-            hasError = true;
-        } else {
-            setPhoneError('');
+        const validation = validateWithSchema(tenantSchema, newTenant);
+        setPhoneError(validation.errors.phone || '');
+        setAadharError(validation.errors.aadhar || '');
+        setFieldErrors(validation.errors);
+        if (!validation.success) {
+            showError(Object.values(validation.errors)[0] || 'Please correct the tenant form.');
+            return;
         }
-
-        // Aadhaar validation
-        const aadhaarValidation = validateAadhaar(newTenant.aadhar);
-        if (!aadhaarValidation.isValid) {
-            setAadharError(aadhaarValidation.error);
-            hasError = true;
-        } else {
-            setAadharError('');
-        }
-
-        if (hasError) return;
 
         const tenantData = {
             ...newTenant,
-            rent: Number(newTenant.rent),
-            advance: Number(newTenant.advance)
+            ...validation.data,
+            rent: validation.data.rent,
+            advance: validation.data.advance
         };
 
         addTenant(tenantData);
         setShowAddTenant(false);
+        setFieldErrors({});
         setNewTenant({
             name: '', phone: '', email: '', profession: '', aadhar: '',
             pgId: pgFilter || pgs[0]?.id || '', roomNumber: '', rent: '', advance: '',
@@ -258,7 +253,7 @@ const TenantsPage = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleAddTenant}>
+                        <form onSubmit={handleAddTenant} noValidate>
                             <div className="grid grid-cols-2">
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Full Name</label>
@@ -267,6 +262,7 @@ const TenantsPage = () => {
                                         value={newTenant.name} onChange={(e) => setNewTenant({ ...newTenant, name: e.target.value })}
                                         required
                                     />
+                                    {fieldErrors.name && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.name}</p>}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Phone Number</label>
@@ -287,6 +283,7 @@ const TenantsPage = () => {
                                         value={newTenant.email} onChange={(e) => setNewTenant({ ...newTenant, email: e.target.value })}
                                         required
                                     />
+                                    {fieldErrors.email && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.email}</p>}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Profession</label>
@@ -295,6 +292,7 @@ const TenantsPage = () => {
                                         value={newTenant.profession} onChange={(e) => setNewTenant({ ...newTenant, profession: e.target.value })}
                                         required
                                     />
+                                    {fieldErrors.profession && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.profession}</p>}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Aadhar Number</label>
@@ -325,6 +323,7 @@ const TenantsPage = () => {
                                             <option value="" disabled>Select a PG</option>
                                             {pgs.map(pg => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
                                         </select>
+                                        {fieldErrors.pgId && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.pgId}</p>}
                                     </div>
                                 )}
                                 <div>
@@ -342,6 +341,7 @@ const TenantsPage = () => {
                                             </option>
                                         ))}
                                     </select>
+                                    {fieldErrors.roomNumber && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.roomNumber}</p>}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Rent (₹)</label>
@@ -353,6 +353,7 @@ const TenantsPage = () => {
                                         }}
                                         required
                                     />
+                                    {fieldErrors.rent && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.rent}</p>}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Security Advance (₹)</label>
@@ -364,6 +365,7 @@ const TenantsPage = () => {
                                         }}
                                         required
                                     />
+                                    {fieldErrors.advance && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.advance}</p>}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem' }}>Date of Joining</label>
@@ -372,6 +374,7 @@ const TenantsPage = () => {
                                         value={newTenant.joiningDate} onChange={(e) => setNewTenant({ ...newTenant, joiningDate: e.target.value })}
                                         required
                                     />
+                                    {fieldErrors.joiningDate && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>{fieldErrors.joiningDate}</p>}
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', height: '100%', paddingTop: '1.5rem' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>

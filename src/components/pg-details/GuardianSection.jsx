@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
+import { guardianSchema } from '../../schemas/guardianSchema';
+import { validateWithSchema } from '../../utils/validation';
 
 const GuardianSection = ({ pgId, isAdmin }) => {
     const { getGuardianForPg, assignGuardianForPg, removeGuardianForPg } = useData();
@@ -11,6 +13,7 @@ const GuardianSection = ({ pgId, isAdmin }) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const loadGuardian = async () => {
         if (!isAdmin) {
@@ -47,36 +50,29 @@ const GuardianSection = ({ pgId, isAdmin }) => {
 
     const handleAssignGuardian = async (e) => {
         e.preventDefault();
-        const normalizedPhone = phone.replace(/\D/g, '');
-        if (!/^\d{10}$/.test(normalizedPhone)) {
-            showError('Phone number must be exactly 10 digits');
+        const validation = validateWithSchema(guardianSchema, {
+            guardianName,
+            phone,
+            password,
+            confirmPassword
+        });
+        if (!validation.success) {
+            setFieldErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the form errors.');
             return;
         }
-        if (!guardianName.trim()) {
-            showError('Guardian name is required');
-            return;
-        }
-
-        const passwordError = validatePassword(password);
-        if (passwordError) {
-            showError(passwordError);
-            return;
-        }
-        if (password !== confirmPassword) {
-            showError('Passwords do not match');
-            return;
-        }
+        setFieldErrors({});
 
         try {
             const data = await assignGuardianForPg({
                 pgId,
-                guardianName: guardianName.trim(),
-                phone: normalizedPhone,
-                password
+                guardianName: validation.data.guardianName,
+                phone: validation.data.phone,
+                password: validation.data.password
             });
             setGuardian(data);
-            setGuardianName(data?.guardian_name || guardianName.trim());
-            setPhone(data?.phone || normalizedPhone);
+            setGuardianName(data?.guardian_name || validation.data.guardianName);
+            setPhone(data?.phone || validation.data.phone);
             setPassword('');
             setConfirmPassword('');
             success('Guardian assigned successfully.');
@@ -140,7 +136,7 @@ const GuardianSection = ({ pgId, isAdmin }) => {
                 </p>
             )}
 
-            <form onSubmit={handleAssignGuardian}>
+            <form onSubmit={handleAssignGuardian} noValidate>
                 <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Guardian Name</label>
@@ -149,9 +145,13 @@ const GuardianSection = ({ pgId, isAdmin }) => {
                             className="input-field"
                             placeholder="Guardian full name"
                             value={guardianName}
-                            onChange={(e) => setGuardianName(e.target.value)}
+                            onChange={(e) => {
+                                setGuardianName(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, guardianName: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.guardianName && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.guardianName}</p>}
                     </div>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Guardian Phone</label>
@@ -161,9 +161,13 @@ const GuardianSection = ({ pgId, isAdmin }) => {
                             maxLength="10"
                             placeholder="9876543210"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            onChange={(e) => {
+                                setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                                setFieldErrors((prev) => ({ ...prev, phone: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.phone && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.phone}</p>}
                     </div>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password</label>
@@ -171,9 +175,13 @@ const GuardianSection = ({ pgId, isAdmin }) => {
                             type="password"
                             className="input-field"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, password: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.password && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.password}</p>}
                     </div>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Confirm Password</label>
@@ -181,9 +189,13 @@ const GuardianSection = ({ pgId, isAdmin }) => {
                             type="password"
                             className="input-field"
                             value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            onChange={(e) => {
+                                setConfirmPassword(e.target.value);
+                                setFieldErrors((prev) => ({ ...prev, confirmPassword: '' }));
+                            }}
                             required
                         />
+                        {fieldErrors.confirmPassword && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{fieldErrors.confirmPassword}</p>}
                     </div>
                 </div>
 

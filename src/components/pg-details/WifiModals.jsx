@@ -10,7 +10,9 @@ const WifiModals = ({
     showEditWifi,
     setShowEditWifi,
     handleEditWifi,
-    handleNumberInput
+    handleNumberInput,
+    addErrors = {},
+    editErrors = {}
 }) => {
     return (
         <>
@@ -27,7 +29,7 @@ const WifiModals = ({
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleAddWifi}>
+                        <form onSubmit={handleAddWifi} noValidate>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Name <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
@@ -37,6 +39,7 @@ const WifiModals = ({
                                     onChange={(e) => setNewWifi({ ...newWifi, floorName: e.target.value })}
                                     required
                                 />
+                                {addErrors.floorName && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.floorName}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Username <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -47,6 +50,7 @@ const WifiModals = ({
                                     onChange={(e) => setNewWifi({ ...newWifi, username: e.target.value })}
                                     required
                                 />
+                                {addErrors.username && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.username}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -57,6 +61,7 @@ const WifiModals = ({
                                     onChange={(e) => setNewWifi({ ...newWifi, password: e.target.value })}
                                     required
                                 />
+                                {addErrors.password && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.password}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -70,6 +75,7 @@ const WifiModals = ({
                                     onChange={(e) => setNewWifi({ ...newWifi, amount: e.target.value })}
                                     required
                                 />
+                                {addErrors.amount && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.amount}</p>}
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Due Date <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -80,6 +86,7 @@ const WifiModals = ({
                                     onChange={(e) => setNewWifi({ ...newWifi, dueDate: e.target.value })}
                                     required
                                 />
+                                {addErrors.dueDate && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.dueDate}</p>}
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -107,7 +114,7 @@ const WifiModals = ({
                         <form onSubmit={(e) => {
                             e.preventDefault();
                             handleEditWifi(showEditWifi);
-                        }}>
+                        }} noValidate>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Name <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <input
@@ -117,6 +124,7 @@ const WifiModals = ({
                                     onChange={(e) => setShowEditWifi({ ...showEditWifi, floorName: e.target.value })}
                                     required
                                 />
+                                {editErrors.floorName && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.floorName}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Username <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -127,6 +135,7 @@ const WifiModals = ({
                                     onChange={(e) => setShowEditWifi({ ...showEditWifi, username: e.target.value })}
                                     required
                                 />
+                                {editErrors.username && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.username}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -137,6 +146,7 @@ const WifiModals = ({
                                     onChange={(e) => setShowEditWifi({ ...showEditWifi, password: e.target.value })}
                                     required
                                 />
+                                {editErrors.password && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.password}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Amount (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -150,6 +160,7 @@ const WifiModals = ({
                                     onChange={(e) => setShowEditWifi({ ...showEditWifi, amount: e.target.value })}
                                     required
                                 />
+                                {editErrors.amount && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.amount}</p>}
                             </div>
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Due Date <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -160,6 +171,7 @@ const WifiModals = ({
                                     onChange={(e) => setShowEditWifi({ ...showEditWifi, dueDate: e.target.value })}
                                     required
                                 />
+                                {editErrors.dueDate && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.dueDate}</p>}
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>

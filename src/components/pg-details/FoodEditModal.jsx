@@ -9,7 +9,8 @@ const FoodEditModal = ({
     foodMenu,
     handleUpdateFood,
     saveFoodMenu,
-    handleNumberInput
+    handleNumberInput,
+    errors = {}
 }) => {
     if (!showEditFood) return null;
 
@@ -37,6 +38,7 @@ const FoodEditModal = ({
                         placeholder="e.g. 3000"
                         onKeyDown={handleNumberInput}
                     />
+                    {errors.foodAmount && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors.foodAmount}</p>}
                 </div>
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Weekly Menu</h3>
@@ -56,12 +58,15 @@ const FoodEditModal = ({
                                     <td style={{ padding: '0.5rem', fontWeight: 600 }}>{day.day}</td>
                                     <td style={{ padding: '0.5rem' }}>
                                         <input className="input-field" style={{ marginBottom: 0 }} value={day.breakfast} onChange={(e) => handleUpdateFood(idx, 'breakfast', e.target.value)} />
+                                        {errors[`foodMenu.${idx}.breakfast`] && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors[`foodMenu.${idx}.breakfast`]}</p>}
                                     </td>
                                     <td style={{ padding: '0.5rem' }}>
                                         <input className="input-field" style={{ marginBottom: 0 }} value={day.lunch} onChange={(e) => handleUpdateFood(idx, 'lunch', e.target.value)} />
+                                        {errors[`foodMenu.${idx}.lunch`] && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors[`foodMenu.${idx}.lunch`]}</p>}
                                     </td>
                                     <td style={{ padding: '0.5rem' }}>
                                         <input className="input-field" style={{ marginBottom: 0 }} value={day.dinner} onChange={(e) => handleUpdateFood(idx, 'dinner', e.target.value)} />
+                                        {errors[`foodMenu.${idx}.dinner`] && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errors[`foodMenu.${idx}.dinner`]}</p>}
                                     </td>
                                 </tr>
                             ))}

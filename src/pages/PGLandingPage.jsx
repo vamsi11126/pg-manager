@@ -4,6 +4,8 @@ import { MapPin, Phone, Mail, BedDouble, Sparkles, Utensils, Wifi, Snowflake, Ba
 import { supabase } from '../utils/supabaseClient';
 import { useData } from '../context/DataContext';
 import './PGLandingPage.css';
+import { visitRequestSchema } from '../schemas/visitRequestSchema';
+import { validateWithSchema } from '../utils/validation';
 
 const defaultFoodMenu = [
     { day: 'Sunday', breakfast: 'Special Breakfast', lunch: 'Veg/Non-Veg Meal', dinner: 'Light Dinner' },
@@ -61,6 +63,7 @@ const PGLandingPage = () => {
     const [showVisitForm, setShowVisitForm] = useState(false);
     const [visitForm, setVisitForm] = useState({ name: '', email: '', phone: '' });
     const [visitStatus, setVisitStatus] = useState({ loading: false, message: '', isError: false });
+    const [visitErrors, setVisitErrors] = useState({});
 
     useEffect(() => {
         let mounted = true;
@@ -194,25 +197,18 @@ const PGLandingPage = () => {
         e.preventDefault();
         if (!pg?.id) return;
 
+        const validation = validateWithSchema(visitRequestSchema, visitForm);
+        if (!validation.success) {
+            setVisitErrors(validation.errors);
+            setVisitStatus({ loading: false, message: Object.values(validation.errors)[0] || 'Please correct the form errors.', isError: true });
+            return;
+        }
+        setVisitErrors({});
+
         const payload = {
             pgId: pg.id,
-            name: visitForm.name.trim(),
-            email: visitForm.email.trim().toLowerCase(),
-            phone: visitForm.phone.trim()
+            ...validation.data
         };
-
-        if (!payload.name || !payload.email || !payload.phone) {
-            setVisitStatus({ loading: false, message: 'All fields are required.', isError: true });
-            return;
-        }
-        if (!/\S+@\S+\.\S+/.test(payload.email)) {
-            setVisitStatus({ loading: false, message: 'Enter a valid email address.', isError: true });
-            return;
-        }
-        if (!/^\d{10}$/.test(payload.phone.replace(/\D/g, ''))) {
-            setVisitStatus({ loading: false, message: 'Phone number must be exactly 10 digits.', isError: true });
-            return;
-        }
 
         setVisitStatus({ loading: true, message: '', isError: false });
         try {
@@ -463,15 +459,19 @@ const PGLandingPage = () => {
                     <div className="lp-card" style={{ width: '100%', maxWidth: '480px' }}>
                         <h3 style={{ marginTop: 0 }}>Book a Visit</h3>
                         <p style={{ color: 'var(--lp-ink-muted)' }}>Share your details. Admin will contact you shortly.</p>
-                        <form onSubmit={handleVisitSubmit}>
+                        <form onSubmit={handleVisitSubmit} noValidate>
                             <div style={{ marginBottom: '0.9rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.35rem' }}>Name</label>
                                 <input
                                     className="input-field"
                                     value={visitForm.name}
-                                    onChange={(e) => setVisitForm((prev) => ({ ...prev, name: e.target.value }))}
+                                    onChange={(e) => {
+                                        setVisitForm((prev) => ({ ...prev, name: e.target.value }));
+                                        setVisitErrors((prev) => ({ ...prev, name: '' }));
+                                    }}
                                     required
                                 />
+                                {visitErrors.name && <p style={{ color: '#b91c1c', fontSize: '0.75rem', marginTop: '0.25rem' }}>{visitErrors.name}</p>}
                             </div>
                             <div style={{ marginBottom: '0.9rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.35rem' }}>Email</label>
@@ -479,9 +479,13 @@ const PGLandingPage = () => {
                                     type="email"
                                     className="input-field"
                                     value={visitForm.email}
-                                    onChange={(e) => setVisitForm((prev) => ({ ...prev, email: e.target.value }))}
+                                    onChange={(e) => {
+                                        setVisitForm((prev) => ({ ...prev, email: e.target.value }));
+                                        setVisitErrors((prev) => ({ ...prev, email: '' }));
+                                    }}
                                     required
                                 />
+                                {visitErrors.email && <p style={{ color: '#b91c1c', fontSize: '0.75rem', marginTop: '0.25rem' }}>{visitErrors.email}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.35rem' }}>Phone Number</label>
@@ -492,9 +496,11 @@ const PGLandingPage = () => {
                                     onChange={(e) => {
                                         const next = e.target.value.replace(/\D/g, '').slice(0, 10);
                                         setVisitForm((prev) => ({ ...prev, phone: next }));
+                                        setVisitErrors((prev) => ({ ...prev, phone: '' }));
                                     }}
                                     required
                                 />
+                                {visitErrors.phone && <p style={{ color: '#b91c1c', fontSize: '0.75rem', marginTop: '0.25rem' }}>{visitErrors.phone}</p>}
                             </div>
                             {visitStatus.message && (
                                 <p style={{ color: visitStatus.isError ? '#b91c1c' : '#0f766e', marginBottom: '0.85rem' }}>

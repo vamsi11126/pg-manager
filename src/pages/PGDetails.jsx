@@ -16,12 +16,20 @@ import PgHeaderTabs from '../components/pg-details/PgHeaderTabs';
 import PgEditModal from '../components/pg-details/PgEditModal';
 import HighlightsSection from '../components/pg-details/HighlightsSection';
 import GuardianSection from '../components/pg-details/GuardianSection';
-import { tenantSchema } from '../validation/tenantSchema';
+import { useToast } from '../context/ToastContext';
+import { tenantSchema } from '../schemas/tenantSchema';
+import { roomCategorySchema } from '../schemas/roomCategorySchema';
+import { pgSchema } from '../schemas/pgSchema';
+import { wifiSchema } from '../schemas/wifiSchema';
+import { foodMenuSchema } from '../schemas/foodMenuSchema';
+import { electricityCurrentReadingSchema, electricityInitialReadingSchema, electricityRateSchema } from '../schemas/electricitySchema';
+import { validateWithSchema } from '../utils/validation';
 
 const PGDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { pgs, authRole, updatePg, deletePg, deleteTenant, tenants, addTenant, updateTenant, createTenantLogin } = useData();
+    const { error: showError } = useToast();
     const pg = pgs.find(p => p.id === id);
 
     const [activeTab, setActiveTab] = useState('rooms');
@@ -34,10 +42,18 @@ const PGDetails = () => {
     const [showAddTenant, setShowAddTenant] = useState(false);
     const [aadharError, setAadharError] = useState('');
     const [phoneError, setPhoneError] = useState('');
+    const [tenantErrors, setTenantErrors] = useState({});
     const [showEditTenant, setShowEditTenant] = useState(null);
     const [editTenant, setEditTenant] = useState(null);
     const [editAadharError, setEditAadharError] = useState('');
     const [editPhoneError, setEditPhoneError] = useState('');
+    const [editTenantErrors, setEditTenantErrors] = useState({});
+    const [roomErrors, setRoomErrors] = useState({});
+    const [editRoomErrors, setEditRoomErrors] = useState({});
+    const [pgErrors, setPgErrors] = useState({});
+    const [wifiErrors, setWifiErrors] = useState({});
+    const [editWifiErrors, setEditWifiErrors] = useState({});
+    const [foodErrors, setFoodErrors] = useState({});
     const roomPhotosInputRef = useRef(null);
     const brochureInputRef = useRef(null);
 
@@ -95,19 +111,28 @@ const PGDetails = () => {
     const [readings, setReadings] = useState({}); // { roomNumber: { current: '', error: '' } }
 
     const handleUpdateEBillRate = () => {
+        const validation = validateWithSchema(electricityRateSchema, { eBillRate });
+        if (!validation.success) {
+            showError(validation.errors.eBillRate || 'Enter a valid electricity rate.');
+            return;
+        }
         updatePg(
-            { ...pg, eBillRate: parseFloat(eBillRate) },
+            { ...pg, eBillRate: validation.data.eBillRate },
             { successMessage: 'Electricity rate updated successfully.' }
         );
     };
 
     const handleInitializeMeter = (roomNum, initialReading) => {
-        if (!initialReading || initialReading < 0) return;
+        const validation = validateWithSchema(electricityInitialReadingSchema, { initialReading });
+        if (!validation.success) {
+            setReadings(prev => ({ ...prev, [roomNum]: { ...prev[roomNum], error: validation.errors.initialReading } }));
+            return;
+        }
 
         const updatedElectricityData = {
             ...(pg.electricityData || {}),
             [roomNum]: {
-                previousReading: parseFloat(initialReading),
+                previousReading: validation.data.initialReading,
                 history: []
             }
         };
@@ -122,7 +147,16 @@ const PGDetails = () => {
         const currentReadingStr = readings[roomNum]?.current;
         if (!currentReadingStr) return;
 
-        const currentReading = parseFloat(currentReadingStr);
+        const validation = validateWithSchema(electricityCurrentReadingSchema, { currentReading: currentReadingStr });
+        if (!validation.success) {
+            setReadings(prev => ({
+                ...prev,
+                [roomNum]: { ...prev[roomNum], error: validation.errors.currentReading }
+            }));
+            return;
+        }
+
+        const currentReading = validation.data.currentReading;
         const roomData = pg.electricityData?.[roomNum];
         const previousReading = roomData?.previousReading || 0;
 
@@ -200,23 +234,6 @@ const PGDetails = () => {
 
     const [foodMenu, setFoodMenu] = useState((pg?.foodMenu && pg.foodMenu.length > 0) ? pg.foodMenu : defaultFoodMenu);
     const [foodAmountDraft, setFoodAmountDraft] = useState(pg?.foodAmount ?? '');
-
-    const getTenantValidationErrors = (tenantData) => {
-        const parsed = tenantSchema.safeParse(tenantData);
-        if (parsed.success) {
-            return { isValid: true, errors: {}, data: parsed.data };
-        }
-
-        const fieldErrors = {};
-        parsed.error.issues.forEach((issue) => {
-            const field = issue.path?.[0];
-            if (field && !fieldErrors[field]) {
-                fieldErrors[field] = issue.message;
-            }
-        });
-
-        return { isValid: false, errors: fieldErrors };
-    };
 
     useEffect(() => {
         if (pg) {
@@ -383,13 +400,21 @@ const PGDetails = () => {
 
     const handleAddRoom = (e) => {
         e.preventDefault();
-        const rooms = newRoom.roomNumbers.split(',').map(n => n.trim()).filter(n => n);
+        const validation = validateWithSchema(roomCategorySchema, newRoom);
+        if (!validation.success) {
+            setRoomErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the room category form.');
+            return;
+        }
+
+        const rooms = validation.data.roomNumbers.split(',').map(n => n.trim()).filter(n => n);
         const updatedPg = {
             ...pg,
-            rooms: [...(pg.rooms || []), { ...newRoom, roomNumbers: rooms, id: Date.now().toString() }]
+            rooms: [...(pg.rooms || []), { ...newRoom, ...validation.data, roomNumbers: rooms, id: Date.now().toString() }]
         };
         updatePg(updatedPg, { successMessage: 'New room category added successfully.' });
         setShowAddRoom(false);
+        setRoomErrors({});
         setNewRoom({
             type: '1 sharing',
             price: '',
@@ -409,21 +434,36 @@ const PGDetails = () => {
     };
 
     const saveFoodMenu = () => {
+        const validation = validateWithSchema(foodMenuSchema, { foodMenu, foodAmount: foodAmountDraft });
+        if (!validation.success) {
+            setFoodErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the food settings.');
+            return;
+        }
+
         updatePg(
-            { ...pg, foodMenu, foodAmount: foodAmountDraft },
+            { ...pg, foodMenu: validation.data.foodMenu, foodAmount: validation.data.foodAmount },
             { successMessage: 'Food menu and amount updated.' }
         );
+        setFoodErrors({});
         setShowEditFood(false);
     };
 
     const handleAddWifi = (e) => {
         e.preventDefault();
+        const validation = validateWithSchema(wifiSchema, newWifi);
+        if (!validation.success) {
+            setWifiErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the WiFi form.');
+            return;
+        }
         const updatedPg = {
             ...pg,
-            wifiDetails: [...(pg.wifiDetails || []), { ...newWifi, id: Date.now().toString() }]
+            wifiDetails: [...(pg.wifiDetails || []), { ...validation.data, id: Date.now().toString() }]
         };
         updatePg(updatedPg, { successMessage: 'WiFi details added successfully.' });
         setShowAddWifi(false);
+        setWifiErrors({});
         setNewWifi({
             floorName: 'Ground Floor',
             username: '',
@@ -474,11 +514,18 @@ const PGDetails = () => {
     };
 
     const handleEditWifi = (wifiToUpdate) => {
+        const validation = validateWithSchema(wifiSchema, wifiToUpdate);
+        if (!validation.success) {
+            setEditWifiErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the WiFi form.');
+            return;
+        }
         const updatedPg = {
             ...pg,
-            wifiDetails: pg.wifiDetails.map(w => w.id === wifiToUpdate.id ? wifiToUpdate : w)
+            wifiDetails: pg.wifiDetails.map(w => w.id === wifiToUpdate.id ? { ...wifiToUpdate, ...validation.data } : w)
         };
         updatePg(updatedPg, { successMessage: 'WiFi details updated successfully.' });
+        setEditWifiErrors({});
         setShowEditWifi(null);
     };
 
@@ -510,7 +557,14 @@ const PGDetails = () => {
 
     const handleEditPg = (e) => {
         e.preventDefault();
-        updatePg({ ...pg, ...editPgData }, { successMessage: 'Property details updated successfully.' });
+        const validation = validateWithSchema(pgSchema, editPgData);
+        if (!validation.success) {
+            setPgErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the property details.');
+            return;
+        }
+        updatePg({ ...pg, ...validation.data }, { successMessage: 'Property details updated successfully.' });
+        setPgErrors({});
         setShowEditPg(false);
     };
 
@@ -534,27 +588,27 @@ const PGDetails = () => {
     const handleAddTenant = (e) => {
         e.preventDefault();
 
-        const { isValid, errors, data } = getTenantValidationErrors(newTenant);
-        setPhoneError(errors.phone || '');
-        setAadharError(errors.aadhar || '');
-        if (!isValid) {
-            const firstError = Object.values(errors)[0];
-            if (firstError && !errors.phone && !errors.aadhar) {
-                alert(firstError);
-            }
+        const validation = validateWithSchema(tenantSchema, newTenant);
+        setPhoneError(validation.errors.phone || '');
+        setAadharError(validation.errors.aadhar || '');
+        setTenantErrors(validation.errors);
+        if (!validation.success) {
+            showError(Object.values(validation.errors)[0] || 'Please correct the tenant form.');
             return;
         }
 
         const tenantData = {
             ...newTenant,
             pgId: id, // Ensure correct PG ID
-            rent: data.rent,
-            advance: data.advance
+            ...validation.data,
+            rent: validation.data.rent,
+            advance: validation.data.advance
         };
 
         addTenant(tenantData);
         setShowAddTenant(false);
         setActiveTab('tenants'); // Switch to tenants tab
+        setTenantErrors({});
 
         // Reset form
         setNewTenant({
@@ -569,21 +623,20 @@ const PGDetails = () => {
         e.preventDefault();
         if (!editTenant) return;
 
-        const { isValid, errors, data } = getTenantValidationErrors(editTenant);
-        setEditPhoneError(errors.phone || '');
-        setEditAadharError(errors.aadhar || '');
-        if (!isValid) {
-            const firstError = Object.values(errors)[0];
-            if (firstError && !errors.phone && !errors.aadhar) {
-                alert(firstError);
-            }
+        const validation = validateWithSchema(tenantSchema, editTenant);
+        setEditPhoneError(validation.errors.phone || '');
+        setEditAadharError(validation.errors.aadhar || '');
+        setEditTenantErrors(validation.errors);
+        if (!validation.success) {
+            showError(Object.values(validation.errors)[0] || 'Please correct the tenant form.');
             return;
         }
 
         const updates = {
             ...editTenant,
-            rent: data.rent,
-            advance: data.advance
+            ...validation.data,
+            rent: validation.data.rent,
+            advance: validation.data.advance
         };
 
         const passwordChanged = Boolean(editTenant.newPassword && editTenant.newPassword.trim());
@@ -594,8 +647,48 @@ const PGDetails = () => {
             newPassword: passwordChanged ? editTenant.newPassword.trim() : undefined,
             changeSummary
         });
+        setEditTenantErrors({});
         setShowEditTenant(null);
         setEditTenant(null);
+    };
+
+    const handleEditRoomSubmit = (e) => {
+        e.preventDefault();
+        if (!showEditRoom) return;
+
+        const roomPayload = {
+            ...showEditRoom,
+            roomNumbers: showEditRoom.roomNumbersString !== undefined ? showEditRoom.roomNumbersString : showEditRoom.roomNumbers?.join(', ')
+        };
+        const validation = validateWithSchema(roomCategorySchema, roomPayload);
+        if (!validation.success) {
+            setEditRoomErrors(validation.errors);
+            showError(Object.values(validation.errors)[0] || 'Please correct the room category form.');
+            return;
+        }
+
+        const newRooms = validation.data.roomNumbers.split(',').map(n => n.trim()).filter(n => n);
+        const oldRooms = pg.rooms.find(r => r.id === showEditRoom.id)?.roomNumbers || [];
+        const removedRooms = oldRooms.filter(r => !newRooms.includes(r));
+
+        if (removedRooms.length > 0) {
+            removedRooms.forEach(roomNum => {
+                const tenantsInRoom = tenants.filter(t => t.pgId === pg.id && t.roomNumber === roomNum);
+                tenantsInRoom.forEach(t => deleteTenant(t.id));
+            });
+        }
+
+        const updatedPg = {
+            ...pg,
+            rooms: pg.rooms.map(r => r.id === showEditRoom.id ? { ...showEditRoom, ...validation.data, roomNumbers: newRooms } : r)
+        };
+        updatePg(updatedPg, {
+            successMessage: removedRooms.length > 0
+                ? `Room category updated. Rooms removed: ${removedRooms.join(', ')}.`
+                : 'Room category updated successfully.'
+        });
+        setEditRoomErrors({});
+        setShowEditRoom(null);
     };
 
     const getVacantRoomsForTenant = () => {
@@ -712,6 +805,7 @@ const PGDetails = () => {
                 editPgData={editPgData}
                 setEditPgData={setEditPgData}
                 handleEditPg={handleEditPg}
+                errors={pgErrors}
             />
 
             <WifiModals
@@ -724,6 +818,8 @@ const PGDetails = () => {
                 setShowEditWifi={setShowEditWifi}
                 handleEditWifi={handleEditWifi}
                 handleNumberInput={handleNumberInput}
+                addErrors={wifiErrors}
+                editErrors={editWifiErrors}
             />
 
             <RoomModals
@@ -746,6 +842,9 @@ const PGDetails = () => {
                 updatePg={updatePg}
                 handleEditRoomPhotosSelected={handleEditRoomPhotosSelected}
                 removeEditRoomPhoto={removeEditRoomPhoto}
+                addErrors={roomErrors}
+                editErrors={editRoomErrors}
+                handleEditRoomSubmit={handleEditRoomSubmit}
             />
 
             <FoodEditModal
@@ -757,6 +856,7 @@ const PGDetails = () => {
                 handleUpdateFood={handleUpdateFood}
                 saveFoodMenu={saveFoodMenu}
                 handleNumberInput={handleNumberInput}
+                errors={foodErrors}
             />
 
             <EditTenantModal
@@ -771,6 +871,7 @@ const PGDetails = () => {
                 handleEditTenantSubmit={handleEditTenantSubmit}
                 getRoomsForEditTenant={getRoomsForEditTenant}
                 handleNumberInput={handleNumberInput}
+                fieldErrors={editTenantErrors}
             />
 
             <AddTenantModal
@@ -785,6 +886,7 @@ const PGDetails = () => {
                 handleAddTenant={handleAddTenant}
                 getVacantRoomsForTenant={getVacantRoomsForTenant}
                 handleNumberInput={handleNumberInput}
+                fieldErrors={tenantErrors}
             />
         </div >
     );

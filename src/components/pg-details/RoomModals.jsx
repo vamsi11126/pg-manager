@@ -20,7 +20,10 @@ const RoomModals = ({
     deleteTenant,
     updatePg,
     handleEditRoomPhotosSelected,
-    removeEditRoomPhoto
+    removeEditRoomPhoto,
+    addErrors = {},
+    editErrors = {},
+    handleEditRoomSubmit
 }) => {
     return (
         <>
@@ -37,7 +40,7 @@ const RoomModals = ({
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleAddRoom}>
+                        <form onSubmit={handleAddRoom} noValidate>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Sharing Type <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <select
@@ -50,6 +53,7 @@ const RoomModals = ({
                                     <option>3 sharing</option>
                                     <option>4 sharing</option>
                                 </select>
+                                {addErrors.type && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.type}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Price (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -63,6 +67,7 @@ const RoomModals = ({
                                     onChange={(e) => setNewRoom({ ...newRoom, price: e.target.value })}
                                     required
                                 />
+                                {addErrors.price && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.price}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Level <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -89,6 +94,7 @@ const RoomModals = ({
                                         );
                                     })()}
                                 </select>
+                                {addErrors.floorName && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.floorName}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Numbers (comma separated) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -100,6 +106,7 @@ const RoomModals = ({
                                     onChange={(e) => setNewRoom({ ...newRoom, roomNumbers: e.target.value })}
                                     required
                                 />
+                                {addErrors.roomNumbers && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{addErrors.roomNumbers}</p>}
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
@@ -210,31 +217,7 @@ const RoomModals = ({
                                 <X size={24} />
                             </button>
                         </div>
-                        <form onSubmit={(e) => {
-                            e.preventDefault();
-                            const newRooms = showEditRoom.roomNumbersString?.split(',').map(n => n.trim()).filter(n => n) || showEditRoom.roomNumbers;
-
-                            const oldRooms = pg.rooms.find(r => r.id === showEditRoom.id)?.roomNumbers || [];
-                            const removedRooms = oldRooms.filter(r => !newRooms.includes(r));
-
-                            if (removedRooms.length > 0) {
-                                removedRooms.forEach(roomNum => {
-                                    const tenantsInRoom = tenants.filter(t => t.pgId === pg.id && t.roomNumber === roomNum);
-                                    tenantsInRoom.forEach(t => deleteTenant(t.id));
-                                });
-                            }
-
-                            const updatedPg = {
-                                ...pg,
-                                rooms: pg.rooms.map(r => r.id === showEditRoom.id ? { ...showEditRoom, roomNumbers: newRooms } : r)
-                            };
-                            updatePg(updatedPg, {
-                                successMessage: removedRooms.length > 0
-                                    ? `Room category updated. Rooms removed: ${removedRooms.join(', ')}.`
-                                    : 'Room category updated successfully.'
-                            });
-                            setShowEditRoom(null);
-                        }}>
+                        <form onSubmit={handleEditRoomSubmit} noValidate>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Sharing Type <span style={{ color: 'var(--danger)' }}>*</span></label>
                                 <select
@@ -247,6 +230,7 @@ const RoomModals = ({
                                     <option>3 sharing</option>
                                     <option>4 sharing</option>
                                 </select>
+                                {editErrors.type && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.type}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Monthly Price (₹) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -259,6 +243,7 @@ const RoomModals = ({
                                     onChange={(e) => setShowEditRoom({ ...showEditRoom, price: e.target.value })}
                                     required
                                 />
+                                {editErrors.price && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.price}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Floor Level <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -285,6 +270,7 @@ const RoomModals = ({
                                         );
                                     })()}
                                 </select>
+                                {editErrors.floorName && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.floorName}</p>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Room Numbers (comma separated) <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -295,6 +281,7 @@ const RoomModals = ({
                                     onChange={(e) => setShowEditRoom({ ...showEditRoom, roomNumbersString: e.target.value })}
                                     required
                                 />
+                                {editErrors.roomNumbers && <p style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{editErrors.roomNumbers}</p>}
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
