@@ -60,8 +60,8 @@ export const positiveNumberFromInput = (label, min = 0.01) =>
         toNumber,
         z
             .number({ required_error: `${label} is required`, invalid_type_error: `${label} must be a valid number` })
-            .refine((value) => Number.isFinite(value), `${label} must be a valid number`)
             .min(min, `${label} must be greater than ${min === 0 ? 'or equal to 0' : 0}`)
+            .refine((value) => Number.isFinite(value), `${label} must be a valid number`)
     );
 
 export const nonNegativeNumberFromInput = (label) =>
@@ -69,8 +69,8 @@ export const nonNegativeNumberFromInput = (label) =>
         toNumber,
         z
             .number({ required_error: `${label} is required`, invalid_type_error: `${label} must be a valid number` })
-            .refine((value) => Number.isFinite(value), `${label} must be a valid number`)
             .min(0, `${label} must be 0 or more`)
+            .refine((value) => Number.isFinite(value), `${label} must be a valid number`)
     );
 
 export const positiveIntegerFromInput = (label, min = 1) =>
