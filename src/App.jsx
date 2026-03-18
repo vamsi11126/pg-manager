@@ -13,6 +13,7 @@ import PGLandingPage from './pages/PGLandingPage';
 import AdminSettings from './pages/AdminSettings';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import UserManual from './pages/UserManual';
+import AppLandingPage from './pages/AppLandingPage';
 import { BookOpen, Home, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 
 const AppContent = () => {
@@ -125,13 +126,14 @@ const AppContent = () => {
     return (
       <Router>
         <Routes>
+          <Route path="/" element={<AppLandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/tenant/login" element={<TenantLoginPage />} />
           <Route path="/guardian/login" element={<GuardianLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pg/:id/landingpage" element={<PGLandingPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="*" element={<Navigate to="/login" />} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
     );

@@ -582,3 +582,36 @@ SET email = EXCLUDED.email,
 -- =====================================================
 -- SELECT * FROM tenants;
 -- SELECT * FROM payment_requests;
+
+-- =====================================================
+-- PLATFORM LEADS TABLE (LANDING PAGE INQUIRIES)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS platform_leads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  location TEXT NOT NULL,
+  status TEXT DEFAULT 'Pending',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE platform_leads ENABLE ROW LEVEL SECURITY;
+
+-- Allow public to insert leads
+DROP POLICY IF EXISTS "Public can insert leads" ON platform_leads;
+CREATE POLICY "Public can insert leads"
+  ON platform_leads
+  FOR INSERT
+  WITH CHECK (true);
+
+-- Only admins can read leads
+DROP POLICY IF EXISTS "Admins can view leads" ON platform_leads;
+CREATE POLICY "Admins can view leads"
+  ON platform_leads
+  FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM profiles p
+    WHERE p.id = auth.uid() AND p.role = 'admin'
+  ));
+
